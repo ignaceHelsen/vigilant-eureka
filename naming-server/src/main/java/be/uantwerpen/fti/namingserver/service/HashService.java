@@ -1,14 +1,12 @@
 package be.uantwerpen.fti.namingserver.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.core.env.Environment;
-
-import java.util.*;
-import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 @Service
 public class HashService {
-    private NavigableMap<Integer, String> nodes;
+    private final NavigableMap<Integer, String> nodes;
 
     public HashService() {
         nodes = new TreeMap<>();
