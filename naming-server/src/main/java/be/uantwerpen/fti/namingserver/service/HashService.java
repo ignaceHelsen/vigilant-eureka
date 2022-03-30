@@ -22,7 +22,6 @@ public class HashService {
         int hash = calculateHash(filename); // e.g. 18
         // now decide where to register the file
 
-        // TODO NOW SAVE TO HASHMAP
         // check if lowest hash of the nodes is higher than the calculated hash
         int lowestKey = nodes.firstKey();
         if (lowestKey > hash) {
