@@ -3,8 +3,8 @@ package be.uantwerpen.fti.namingserver.service;
 import org.springframework.stereotype.Service;
 import org.springframework.core.env.Environment;
 
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.Map.Entry;
 
 @Service
 public class HashService {
@@ -22,7 +22,13 @@ public class HashService {
         int hash = calculateHash(filename); // e.g. 18
         // now decide where to register the file
 
-        //TODO NOW SAVE TO HASHMAP
+        // TODO NOW SAVE TO HASHMAP
+        // check if lowest hash of the nodes is higher than the calculated hash
+        int lowestKey = nodes.firstKey();
+        if (lowestKey > hash) {
+            return nodes.get(nodes.lastKey()); // return the highest node
+        }
+
         int keyOfClosestAndLowerNode = nodes.floorKey(hash);
         return nodes.get(keyOfClosestAndLowerNode); // dns  name
     }
