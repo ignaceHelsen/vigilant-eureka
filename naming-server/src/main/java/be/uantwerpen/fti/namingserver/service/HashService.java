@@ -9,11 +9,9 @@ import java.util.TreeMap;
 @Service
 public class HashService {
     private NavigableMap<Integer, String> nodes;
-    private final Environment env;
 
-    public HashService(Environment env) {
+    public HashService() {
         nodes = new TreeMap<>();
-        this.env = env;
     }
 
     public int calculateHash(String filename) {
