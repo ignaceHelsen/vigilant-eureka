@@ -32,4 +32,8 @@ public class HashService {
         int keyOfClosestAndLowerNode = nodes.floorKey(hash);
         return nodes.get(keyOfClosestAndLowerNode); // dns  name
     }
-}
+
+    public void registerNode(String ipAddress, String hostname) {
+        //Put in map
+    }
+ }
