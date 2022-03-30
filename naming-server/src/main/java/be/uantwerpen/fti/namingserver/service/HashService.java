@@ -1,22 +1,23 @@
 package be.uantwerpen.fti.namingserver.service;
 
+import be.uantwerpen.fti.namingserver.HashConfig;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
 @Service
 public class HashService {
     private NavigableMap<Integer, String> nodes;
-    @Value("${MAP.FILENAME}")
-    private String mapFilename;
+    private final  HashConfig hashConfig;
 
-    public HashService() {
+    public HashService(HashConfig hashConfig) {
+        this.hashConfig = hashConfig;
         nodes = new TreeMap<>();
         readMapFromFile();
     }
@@ -47,7 +48,7 @@ public class HashService {
 
     private void readMapFromFile() {
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(mapFilename));
+            BufferedReader reader = new BufferedReader(new FileReader(hashConfig.getFilename()));
             Gson gson = new Gson();
             nodes = gson.fromJson(reader, new TypeToken<TreeMap<Integer, String>>() {}.getType());
             reader.close();
@@ -61,7 +62,7 @@ public class HashService {
         Gson gson = new Gson();
         String json = gson.toJson(nodes);
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(mapFilename));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(hashConfig.getFilename()));
             writer.write(json);
             writer.close();
         } catch (IOException e) {
