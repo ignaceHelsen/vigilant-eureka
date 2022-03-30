@@ -1,16 +1,26 @@
 package be.uantwerpen.fti.namingserver.service;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.io.*;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
 @Service
 public class HashService {
-    private final NavigableMap<Integer, String> nodes;
+    private NavigableMap<Integer, String> nodes;
+    @Value("${MAP.FILENAME}")
+    private String mapFilename;
 
     public HashService() {
         nodes = new TreeMap<>();
+        readMapFromFile();
     }
+
 
     public int calculateHash(String filename) {
         return (filename.hashCode() + Integer.MAX_VALUE) * (Short.MAX_VALUE / (Integer.MAX_VALUE + Math.abs(Integer.MIN_VALUE)));
@@ -31,6 +41,32 @@ public class HashService {
     }
 
     public void registerNode(String ipAddress, String hostname) {
-        //Put in map
+        nodes.put(hostname.hashCode(), hostname); //ipAddress is depricated. (Werkt nog, maar is niet meer nodig)
+        updateMap();
     }
- }
+
+    private void readMapFromFile() {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(mapFilename));
+            Gson gson = new Gson();
+            nodes = gson.fromJson(reader, new TypeToken<TreeMap<Integer, String>>() {}.getType());
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void updateMap() {
+        Gson gson = new Gson();
+        String json = gson.toJson(nodes);
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(mapFilename));
+            writer.write(json);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
