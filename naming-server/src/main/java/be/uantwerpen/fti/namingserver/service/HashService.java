@@ -21,4 +21,8 @@ public class HashService {
         //String ip = map[hashCode];
         return ip;
     }
+
+    public void registerNode(String ipAddress, String hostname) {
+        //Put in map
+    }
  }
