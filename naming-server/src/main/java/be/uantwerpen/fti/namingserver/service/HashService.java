@@ -17,7 +17,7 @@ public class HashService {
     }
 
     public int calculateHash(String filename) {
-        return (filename.hashCode() + Integer.MAX_VALUE) * (32768 / (Short.MAX_VALUE + Math.abs(Integer.MIN_VALUE)));
+        return (filename.hashCode() + Integer.MAX_VALUE) * (Short.MAX_VALUE / (Integer.MAX_VALUE + Math.abs(Integer.MIN_VALUE)));
     }
 
     public String registerFile(String filename) {
