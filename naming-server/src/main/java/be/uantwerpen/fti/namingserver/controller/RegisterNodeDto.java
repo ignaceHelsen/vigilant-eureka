@@ -7,5 +7,5 @@ import lombok.Setter;
 @Setter
 public class RegisterNodeDto {
     private String ipAddress;
-    private String ipAddress;
+    private String hostname;
 }

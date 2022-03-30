@@ -22,8 +22,8 @@ public class NamingController {
 
     @PostMapping("/registerNode")
     public ResponseEntity<Void> registerNode(@RequestBody RegisterNodeDto registerDto) {
-        int a = 1;
-        return null;
+        hashService.registerNode(registerDto.getIpAddress(), registerDto.getHostname());
+        return ResponseEntity.ok(null);
     }
 
 }
