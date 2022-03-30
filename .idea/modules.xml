@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/VigilantEureka.iml" filepath="$PROJECT_DIR$/.idea/VigilantEureka.iml" />
+      <module fileurl="file://$PROJECT_DIR$/naming-server/naming-server.iml" filepath="$PROJECT_DIR$/naming-server/naming-server.iml" />
     </modules>
   </component>
 </project>

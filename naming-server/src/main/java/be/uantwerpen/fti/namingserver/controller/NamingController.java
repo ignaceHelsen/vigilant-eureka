@@ -10,22 +10,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/naming")
 @Slf4j
 @RequiredArgsConstructor
+@RequestMapping("/api/naming")
 public class NamingController {
     private final HashService hashService;
 
-    @GetMapping("/calculateHash/{filename}")
-    public ResponseEntity<Integer> getBalance(@PathVariable String filename) {
-        int ipAddress = hashService.calculateHash(filename);
-
-        return ResponseEntity.ok(ipAddress);
-    }
-
-    @GetMapping("/getIp/{filename}")
-    public ResponseEntity<String> getIp(@PathVariable String filename) {
-
-        return ResponseEntity.ok("192.168.0.1");
+    @GetMapping("/registerfile/{filename}")
+    public ResponseEntity<String> registerFile(@PathVariable String filename) {
+        String destination = hashService.registerFile(filename);
+        if (destination == null) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(destination);
     }
 }
