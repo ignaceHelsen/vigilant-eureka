@@ -6,11 +6,19 @@ import org.springframework.stereotype.Service;
 public class HashService {
     private String ipAddresses[];
 
-    public String calculateHash(String filename) {
-        short hashcode = (short) filename.hashCode();
+    public int calculateHash(String filename) {
+        int hashcode = filename.hashCode();
 
         // e.g. 32104
-        return "aze";
+        return 0;
 
     }
-}
+
+    public String getIp(String fileName) {
+        int hashCode =  calculateHash(fileName);
+
+        String ip = null;
+        //String ip = map[hashCode];
+        return ip;
+    }
+ }

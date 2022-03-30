@@ -17,8 +17,8 @@ public class NamingController {
     private final HashService hashService;
 
     @GetMapping("/calculateHash/{filename}")
-    public ResponseEntity<String> getBalance(@PathVariable String filename) {
-        String ipAddress = hashService.calculateHash(filename);
+    public ResponseEntity<Integer> getBalance(@PathVariable String filename) {
+        int ipAddress = hashService.calculateHash(filename);
 
         return ResponseEntity.ok(ipAddress);
     }
