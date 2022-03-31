@@ -2,26 +2,29 @@ package be.uantwerpen.fti.namingserver.service;
 
 import be.uantwerpen.fti.namingserver.HashConfig;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
 @Service
+@Slf4j
 public class HashService {
     private NavigableMap<Integer, String> nodes;
-    private final  HashConfig hashConfig;
+    private final HashConfig hashConfig;
 
     public HashService(HashConfig hashConfig) {
         this.hashConfig = hashConfig;
         nodes = new TreeMap<>();
         readMapFromFile();
     }
-
 
     public int calculateHash(String filename) {
         return (filename.hashCode() + Integer.MAX_VALUE) * (Short.MAX_VALUE / (Integer.MAX_VALUE + Math.abs(Integer.MIN_VALUE)));
@@ -42,7 +45,7 @@ public class HashService {
     }
 
     public void registerNode(String ipAddress, String hostname) {
-        nodes.put(hostname.hashCode(), hostname); //ipAddress is depricated. (Werkt nog, maar is niet meer nodig)
+        nodes.put(Math.abs((short) hostname.hashCode()), hostname); //ipAddress is deprecated. (Werkt nog, maar is niet meer nodig)
         updateMap();
     }
 
@@ -50,8 +53,16 @@ public class HashService {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(hashConfig.getFilename()));
             Gson gson = new Gson();
-            nodes = gson.fromJson(reader, new TypeToken<TreeMap<Integer, String>>() {}.getType());
+            var map = gson.fromJson(reader, TreeMap.class);
+            if (map == null) {
+                nodes = new TreeMap<>();
+            } else {
+                nodes = map;
+            }
             reader.close();
+        } catch (FileNotFoundException e) {
+            nodes = new TreeMap<>();
+            log.error("Could not find nodes.json file.");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -62,12 +73,19 @@ public class HashService {
         Gson gson = new Gson();
         String json = gson.toJson(nodes);
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(hashConfig.getFilename()));
-            writer.write(json);
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            Path path = Paths.get(hashConfig.getFilename());
+            File file = new File(hashConfig.getFilename());
+
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            Files.write(path, json.getBytes(StandardCharsets.UTF_8));
+        } catch(NoSuchFileException e) {
+            log.error("Could not find nodes.json.");
+        }
+        catch (IOException e) {
+            log.error("Unable to create or find nodes.json.");
         }
     }
 }
-
