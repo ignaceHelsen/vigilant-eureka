@@ -9,6 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 @Configuration
 @ConfigurationProperties(prefix = "map")
-public class HashConfig {
+public class MapConfig {
     private String filename;
 }

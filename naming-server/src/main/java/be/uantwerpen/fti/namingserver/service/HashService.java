@@ -1,6 +1,6 @@
 package be.uantwerpen.fti.namingserver.service;
 
-import be.uantwerpen.fti.namingserver.HashConfig;
+import be.uantwerpen.fti.namingserver.MapConfig;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,10 +18,10 @@ import java.util.TreeMap;
 @Slf4j
 public class HashService {
     private NavigableMap<Integer, String> nodes;
-    private final HashConfig hashConfig;
+    private final MapConfig mapConfig;
 
-    public HashService(HashConfig hashConfig) {
-        this.hashConfig = hashConfig;
+    public HashService(MapConfig mapConfig) {
+        this.mapConfig = mapConfig;
         nodes = new TreeMap<>();
         readMapFromFile();
     }
@@ -51,7 +51,7 @@ public class HashService {
 
     private void readMapFromFile() {
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(hashConfig.getFilename()));
+            BufferedReader reader = new BufferedReader(new FileReader(mapConfig.getFilename()));
             Gson gson = new Gson();
             var map = gson.fromJson(reader, TreeMap.class);
             if (map == null) {
@@ -73,8 +73,8 @@ public class HashService {
         Gson gson = new Gson();
         String json = gson.toJson(nodes);
         try {
-            Path path = Paths.get(hashConfig.getFilename());
-            File file = new File(hashConfig.getFilename());
+            Path path = Paths.get(mapConfig.getFilename());
+            File file = new File(mapConfig.getFilename());
 
             if (!file.exists()) {
                 file.createNewFile();
