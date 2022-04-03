@@ -9,18 +9,14 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class NetworkService implements
-        ApplicationListener<ContextRefreshedEvent> {
-
+public class NetworkService implements ApplicationListener<ContextRefreshedEvent> {
     private final NetworkConfig networkConfig;
     private final RestService restService;
 
     public void registerNode() {
         RegisterRequest registerRequest = new RegisterRequest(networkConfig.getIpAddress(), networkConfig.getHostName());
         restService.registerNode(registerRequest);
-
     }
-
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {

@@ -8,7 +8,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class RegisterRequest {
-
     private String ipAddress;
     private String hostname;
 }
