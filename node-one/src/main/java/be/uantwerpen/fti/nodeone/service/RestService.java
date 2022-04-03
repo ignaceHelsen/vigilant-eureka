@@ -19,15 +19,31 @@ public class RestService {
         ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getIp/%s",
                 namingServerConfig.getAddress(), namingServerConfig.getPort(), filename), String.class);
 
-        //Handle status code
+        if (response.getStatusCode().is4xxClientError()) {
+            log.error("Client error occurred while requesting ip of node with file({})", filename);
+            return null;
+        }
+        else if (response.getStatusCode().is5xxServerError()) {
+            log.error("Server error occurred while requesting ip of node with file({})", filename);
+            return null;
+        }
 
         return response.getBody();
     }
 
-    public void registerNode(RegisterRequest registerRequest) {
-        ResponseEntity<Void> response = restTemplate.postForEntity(String.format("http://%s:%s/api/naming/registerNode/",
-                namingServerConfig.getAddress(), namingServerConfig.getPort()), registerRequest, Void.class);
+    public boolean(RegisterRequest registerRequest) {
+        ResponseEntity<Boolean> response = restTemplate.postForEntity(String.format("http://%s:%s/api/naming/registerNode/",
+                namingServerConfig.getAddress(), namingServerConfig.getPort()), registerRequest, Boolean.class);
 
-        //Handle status code
+        if (response.getStatusCode().is4xxClientError()) {
+            log.error("Client error occurred while registering node");
+            return false;
+        }
+        else if (response.getStatusCode().is5xxServerError()) {
+            log.error("Server error occurred while registering node");
+            return false;
+        }
+
+        return Boolean.TRUE.equals(response.getBody());
     }
 }
