@@ -1,5 +1,7 @@
 package be.uantwerpen.fti.namingserver.controller;
 
+import be.uantwerpen.fti.namingserver.controller.dto.RegisterNodeDto;
+import be.uantwerpen.fti.namingserver.controller.dto.RemoveNodeDto;
 import be.uantwerpen.fti.namingserver.service.HashService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +15,9 @@ import org.springframework.web.bind.annotation.*;
 public class NamingController {
     private final HashService hashService;
 
-    @GetMapping("/registerfile/{filename}")
+    @GetMapping("/registerFile/{filename}")
     public ResponseEntity<String> registerFile(@PathVariable String filename) {
+        log.info("Ip address of node with file ({}) has been requested", filename);
         String destination = hashService.registerFile(filename);
         if (destination == null) return ResponseEntity.badRequest().build();
         return ResponseEntity.ok(destination);
@@ -22,7 +25,16 @@ public class NamingController {
 
     @PostMapping("/registerNode")
     public ResponseEntity<Boolean> registerNode(@RequestBody RegisterNodeDto registerDto) {
-        hashService.registerNode(registerDto.getIpAddress(), registerDto.getHostname());
+        log.info("The registration of node with hostname ({}) and ip address ({}) has been requested",
+                registerDto.getHostname(), registerDto.getIpAddress());
+        boolean succes = hashService.registerNode(registerDto.getIpAddress(), registerDto.getHostname());
+        return ResponseEntity.ok(succes);
+    }
+
+    @DeleteMapping("/removeNode")
+    public ResponseEntity<Boolean> removeNode(@RequestBody RemoveNodeDto removeDto) {
+        log.info("The removal of node with hostname ({}) has been requested", removeDto.getHostname());
+        hashService.removeNode(removeDto.getHostname());
         return ResponseEntity.ok(true);
     }
 

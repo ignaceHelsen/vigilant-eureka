@@ -1,4 +1,4 @@
-package be.uantwerpen.fti.namingserver.controller;
+package be.uantwerpen.fti.namingserver.controller.dto;
 
 import lombok.Getter;
 import lombok.Setter;
