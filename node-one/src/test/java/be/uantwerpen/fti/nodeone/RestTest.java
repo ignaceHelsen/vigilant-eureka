@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 public class RestTest {
-
     @Autowired
     RestService restService;
 
@@ -43,14 +42,12 @@ public class RestTest {
 
     @Test
     public void removeNodeTest() {
-        restService.removeNode(new RemoveNodeRequest(networkConfig.getHostName()));
+        restService.removeNode(new RemoveNodeRequest("host3.group5.6dist"));
     }
 
     @Test
     public void registerAndDeleteNodeTest() {
         restService.registerNode(new RegisterNodeRequest(networkConfig.getIpAddress(), networkConfig.getHostName()));
         restService.removeNode(new RemoveNodeRequest(networkConfig.getHostName()));
-
     }
-
 }

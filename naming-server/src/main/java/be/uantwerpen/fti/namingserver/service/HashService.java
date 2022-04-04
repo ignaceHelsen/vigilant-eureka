@@ -36,6 +36,8 @@ public class HashService {
         // now decide where to register the file
 
         // check if lowest hash of the nodes is higher than the calculated hash
+        if (nodes.isEmpty()) return null;
+
         int lowestKey = nodes.firstKey();
         if (lowestKey > hash) {
             return nodes.get(nodes.lastKey()); // return the highest node
@@ -73,7 +75,6 @@ public class HashService {
             Gson gson = new Gson();
             var map = gson.fromJson(reader, TreeMap.class);
             nodes = new TreeMap<>();
-
 
             if (map != null) {
                 Object[] keys = map.keySet().toArray();

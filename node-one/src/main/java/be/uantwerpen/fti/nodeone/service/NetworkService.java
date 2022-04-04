@@ -12,8 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class NetworkService implements
-        ApplicationListener<ContextRefreshedEvent> {
+public class NetworkService implements ApplicationListener<ContextRefreshedEvent> {
 
     private final NetworkConfig networkConfig;
     private final RestService restService;
@@ -39,7 +38,6 @@ public class NetworkService implements
 
         if (success) {
                 log.info("Removing node was successful");
-
         }
         else {
             log.warn("Removing node failed");

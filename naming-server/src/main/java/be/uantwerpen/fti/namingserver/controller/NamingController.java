@@ -19,7 +19,10 @@ public class NamingController {
     public ResponseEntity<String> registerFile(@PathVariable String filename) {
         log.info("Ip address of node with file ({}) has been requested", filename);
         String destination = hashService.registerFile(filename);
-        if (destination == null) return ResponseEntity.badRequest().build();
+        if (destination == null) {
+            log.info("No node found.");
+            return ResponseEntity.badRequest().build();
+        }
         return ResponseEntity.ok(destination);
     }
 
@@ -37,5 +40,4 @@ public class NamingController {
         hashService.removeNode(removeDto.getHostname());
         return ResponseEntity.ok(true);
     }
-
 }

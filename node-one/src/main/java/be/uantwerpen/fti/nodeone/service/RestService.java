@@ -22,16 +22,14 @@ public class RestService {
 
     public String requestNodeIp(String filename) {
         log.info("Requesting ip address for file ({})", filename);
-          try {
+        try {
             ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/registerfile/%s",
                     namingServerConfig.getAddress(), namingServerConfig.getPort(), filename), String.class);
             return response.getBody();
-        }
-        catch (HttpClientErrorException e) {
+        } catch (HttpClientErrorException e) {
             log.error("Client error occurred while requesting ip of node with file({})", filename);
             return null;
-        }
-        catch (HttpServerErrorException e) {
+        } catch (HttpServerErrorException e) {
             log.error("Server error occurred while requesting ip of node with file({})", filename);
             return null;
         }
@@ -43,12 +41,10 @@ public class RestService {
             ResponseEntity<Boolean> response = restTemplate.postForEntity(String.format("http://%s:%s/api/naming/registerNode/",
                     namingServerConfig.getAddress(), namingServerConfig.getPort()), registerRequest, Boolean.class);
             return Boolean.TRUE.equals(response.getBody());
-        }
-        catch (HttpClientErrorException e) {
+        } catch (HttpClientErrorException e) {
             log.error("Client error occurred while registering node");
             return false;
-        }
-        catch (HttpServerErrorException e) {
+        } catch (HttpServerErrorException e) {
             log.error("Server error occurred while registering node");
             return false;
         }
@@ -61,13 +57,12 @@ public class RestService {
             ResponseEntity<Boolean> response = restTemplate.exchange(String.format("http://%s:%s/api/naming/removeNode/",
                             namingServerConfig.getAddress(), namingServerConfig.getPort()), HttpMethod.DELETE,
                     new HttpEntity<>(deleteRequest), Boolean.class);
+
             return Boolean.TRUE.equals(response.getBody());
-        }
-        catch (HttpClientErrorException e) {
+        } catch (HttpClientErrorException e) {
             log.error("Client error occurred while registering node");
             return false;
-        }
-        catch (HttpServerErrorException e) {
+        } catch (HttpServerErrorException e) {
             log.error("Server error occurred while registering node");
             return false;
         }
