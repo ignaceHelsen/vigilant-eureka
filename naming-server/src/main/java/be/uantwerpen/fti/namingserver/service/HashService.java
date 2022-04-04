@@ -1,6 +1,6 @@
 package be.uantwerpen.fti.namingserver.service;
 
-import be.uantwerpen.fti.namingserver.MapConfig;
+import be.uantwerpen.fti.namingserver.config.MapConfig;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,8 +28,7 @@ public class HashService {
     }
 
     public int calculateHash(String filename) {
-        // return (filename.hashCode() + Integer.MAX_VALUE) * ((int)Short.MAX_VALUE / (Integer.MAX_VALUE + Math.abs(Integer.MIN_VALUE)));
-        return (short)filename.hashCode();
+        return (int) (((long) filename.hashCode() + (long) Integer.MAX_VALUE) * ((double) Short.MAX_VALUE / (2 * (double) Integer.MAX_VALUE)));
     }
 
     public String registerFile(String filename) {
