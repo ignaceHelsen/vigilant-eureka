@@ -49,6 +49,6 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        //registerNode();
+        registerNode();
     }
 }
