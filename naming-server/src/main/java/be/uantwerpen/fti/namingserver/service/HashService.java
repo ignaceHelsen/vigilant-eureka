@@ -1,6 +1,6 @@
 package be.uantwerpen.fti.namingserver.service;
 
-import be.uantwerpen.fti.namingserver.MapConfig;
+import be.uantwerpen.fti.namingserver.config.MapConfig;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+
 
 @Service
 @Slf4j
@@ -27,7 +28,7 @@ public class HashService {
     }
 
     public int calculateHash(String filename) {
-        return (filename.hashCode() + Integer.MAX_VALUE) * (Short.MAX_VALUE / (Integer.MAX_VALUE + Math.abs(Integer.MIN_VALUE)));
+        return (int) (((long) filename.hashCode() + (long) Integer.MAX_VALUE) * ((double) Short.MAX_VALUE / (2 * (double) Integer.MAX_VALUE)));
     }
 
     public String registerFile(String filename) {
@@ -35,6 +36,8 @@ public class HashService {
         // now decide where to register the file
 
         // check if lowest hash of the nodes is higher than the calculated hash
+        if (nodes.isEmpty()) return null;
+
         int lowestKey = nodes.firstKey();
         if (lowestKey > hash) {
             return nodes.get(nodes.lastKey()); // return the highest node
@@ -44,9 +47,26 @@ public class HashService {
         return nodes.get(keyOfClosestAndLowerNode); // dns  name
     }
 
-    public void registerNode(String ipAddress, String hostname) {
-        nodes.put(Math.abs((short) hostname.hashCode()), hostname); //ipAddress is deprecated. (Werkt nog, maar is niet meer nodig)
+    public boolean registerNode(String ipAddress, String hostname) {
+        int hash = calculateHash(hostname);
+        if (nodes.containsKey(hash)) {
+            log.info("Node with hostname ({}) and ip address ({}) is already in the map", hostname, ipAddress);
+            return false;
+        }
+
+        nodes.put(calculateHash(hostname), ipAddress);
         updateMap();
+        log.info("Node with hostname ({}) and ip address ({}) has been added to the map", hostname, ipAddress);
+
+        return true;
+    }
+
+    public void removeNode(String hostname) {
+        int hash = calculateHash(hostname);
+        nodes.remove(hash);
+        updateMap();
+        log.info("Node with hostname ({}) has been removed to the map", hostname);
+
     }
 
     private void readMapFromFile() {
@@ -54,10 +74,14 @@ public class HashService {
             BufferedReader reader = new BufferedReader(new FileReader(mapConfig.getFilename()));
             Gson gson = new Gson();
             var map = gson.fromJson(reader, TreeMap.class);
-            if (map == null) {
-                nodes = new TreeMap<>();
-            } else {
-                nodes = map;
+            nodes = new TreeMap<>();
+
+            if (map != null) {
+                Object[] keys = map.keySet().toArray();
+                Object[] values = map.values().toArray();
+                for (int i = 0; i < keys.length; i++) {
+                    nodes.put(Integer.parseInt((String) keys[i]), (String) values[i]);
+                }
             }
             reader.close();
         } catch (FileNotFoundException e) {
@@ -81,10 +105,9 @@ public class HashService {
             }
 
             Files.write(path, json.getBytes(StandardCharsets.UTF_8));
-        } catch(NoSuchFileException e) {
+        } catch (NoSuchFileException e) {
             log.error("Could not find nodes.json.");
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error("Unable to create or find nodes.json.");
         }
     }

@@ -7,7 +7,6 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class RegisterRequest {
-    private String ipAddress;
-    private String hostname;
+public class RemoveNodeRequest {
+    String hostname;
 }
