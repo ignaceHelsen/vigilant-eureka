@@ -25,6 +25,7 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
     private final MulticastListener listener;
 
     public void registerNode() {
+        // https://www.baeldung.com/java-broadcast-multicast
         // multicast to group
         DatagramSocket socket;
         InetAddress group;
