@@ -1,6 +1,7 @@
 package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RegisterNodeRequest;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,8 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
 
     private final NetworkConfig networkConfig;
     private final RestService restService;
+    private final TcpService tcpService;
+    private final NodeStructure nodeStructure;
 
     public void registerNode() {
         RegisterNodeRequest registerRequest = new RegisterNodeRequest(networkConfig.getIpAddress(), networkConfig.getHostName());
@@ -47,18 +50,20 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
     }
 
     public void nodeShutDown() {
-        nodeShutDown(networkConfig.getHostName(), 0, 0);
+        nodeShutDown(networkConfig.getHostName(), nodeStructure.getNext(), nodeStructure.getPrevious());
     }
+
+
 
     public void nodeShutDown(String hostname, int next, int previous) {
         //Request ip with id next node namingservice (REST)
         String NextIp = restService.requestNodeIpWithHashValue(next);
         //Send id previous to next (TCP)
-
+        tcpService.sendUpdatePrevious(NextIp, previous);
         //Request ip with id previous node namingservice (REST)
         String PreviousIp = restService.requestNodeIpWithHashValue(previous);
         //Send id next to previous (TCP)
-
+        tcpService.sendUpdateNext(PreviousIp, next);
         restService.removeNode(new RemoveNodeRequest(hostname));
     }
 

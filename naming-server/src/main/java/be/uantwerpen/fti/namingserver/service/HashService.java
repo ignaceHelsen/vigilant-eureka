@@ -1,6 +1,7 @@
 package be.uantwerpen.fti.namingserver.service;
 
 import be.uantwerpen.fti.namingserver.config.MapConfig;
+import be.uantwerpen.fti.namingserver.controller.dto.NextAndPreviousDto;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -114,5 +115,19 @@ public class HashService {
 
     public String getAddressWithKey(int key){
         return nodes.get(key);
+    }
+
+    public int getNext(String hostname){
+        return nodes.higherKey(calculateHash(hostname));
+    }
+
+    public int getPrevious(String hostname) {
+        return nodes.lowerKey(calculateHash(hostname));
+    }
+
+    public NextAndPreviousDto getNextAndPrevious(String hostname){
+        int idNext = getNext(hostname);
+        int idPrevious = getPrevious(hostname);
+        return new NextAndPreviousDto(idNext, getAddressWithKey(idNext), idPrevious, getAddressWithKey(idPrevious));
     }
 }

@@ -52,4 +52,6 @@ public class NamingController {
         hashService.removeNode(removeDto.getHostname());
         return ResponseEntity.ok(true);
     }
+
+
 }
