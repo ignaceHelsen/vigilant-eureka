@@ -46,6 +46,22 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
 
     }
 
+    public void nodeShutDown() {
+        nodeShutDown(networkConfig.getHostName(), 0, 0);
+    }
+
+    public void nodeShutDown(String hostname, int next, int previous) {
+        //Request ip with id next node namingservice (REST)
+
+        //Send id previous to next (TCP)
+
+        //Request ip with id previous node namingservice (REST)
+
+        //Send id next to previous (TCP)
+
+        restService.removeNode(new RemoveNodeRequest(hostname));
+    }
+
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
