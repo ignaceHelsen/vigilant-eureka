@@ -12,4 +12,6 @@ import org.springframework.context.annotation.Configuration;
 public class NetworkConfig {
     private String ipAddress;
     private String hostName;
+    private int multicastPort;
+    private String multicastGroupIp;
 }

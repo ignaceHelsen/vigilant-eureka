@@ -7,26 +7,23 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @Service
-@RequiredArgsConstructor
 public class MulticastListener extends Thread {
     private final NetworkConfig networkConfig;
-    private MulticastSocket socket;
+    private final MulticastSocket socket;
     private NodeStructure nodeStructure;
+
+    public MulticastListener(NetworkConfig networkConfig, MulticastSocket socket) {
+        this.networkConfig = networkConfig;
+        this.socket = socket;
+        this.start();
+    }
 
     @Override
     public void run() {
-        try {
-            socket = new MulticastSocket(4446);
-            SocketAddress group = new InetSocketAddress("230.0.0.0", 4446);
-            InetAddress addresss = InetAddress.getByName("230.0.0.0");
-            socket.joinGroup(group, NetworkInterface.getByInetAddress(addresss));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         while (true) {
             try {
                 byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
@@ -34,7 +31,11 @@ public class MulticastListener extends Thread {
                 socket.receive(packet);
 
                 // calculate hash of the node that sent the multicast
-                int nodeHash = calculateHash(Arrays.toString(buffer));
+                String nodeName = new String(buffer, StandardCharsets.UTF_8);
+                // ignore if same node
+                if (nodeName.equals(networkConfig.getHostName())) continue;
+
+                int nodeHash = calculateHash(nodeName);
 
                 // calculate own hash
                 int ownHash = calculateHash(networkConfig.getHostName());

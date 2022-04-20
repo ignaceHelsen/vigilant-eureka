@@ -3,12 +3,10 @@ package be.uantwerpen.fti.nodeone.service;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
-import be.uantwerpen.fti.nodeone.domain.RegisterNodeRequest;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +22,7 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
     private final NodeStructure nodeStructure;
     private final MulticastListener listener;
 
-    public void registerNode() {
+    private void registerNode() {
         // https://www.baeldung.com/java-broadcast-multicast
         // multicast to group
         DatagramSocket socket;
@@ -65,7 +63,7 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) { // TODO replace by ApplicationReadyEvent ?
         // https://stackoverflow.com/questions/20275952/java-listen-to-contextrefreshedevent
-        registerNode();
+        this.registerNode();
         listenForMulticast();
     }
 
