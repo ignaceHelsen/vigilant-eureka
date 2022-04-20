@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 @AllArgsConstructor
-public class MulticastListener implements ApplicationListener<ContextRefreshedEvent> {
+public class MulticastListener {
     private final NetworkConfig networkConfig;
     private final HashService hashService;
     private final TcpService tcpService;
@@ -39,11 +39,5 @@ public class MulticastListener implements ApplicationListener<ContextRefreshedEv
                 e.printStackTrace();
             }
         }
-    }
-
-    // when everything has loaded
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
-        listenForMulticast();
     }
 }
