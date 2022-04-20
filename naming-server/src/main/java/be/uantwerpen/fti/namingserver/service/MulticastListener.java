@@ -41,9 +41,9 @@ public class MulticastListener implements ApplicationListener<ContextRefreshedEv
         }
     }
 
-    // if everything has loaded
+    // when everything has loaded
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        this.listenForMulticast();
+        listenForMulticast();
     }
 }

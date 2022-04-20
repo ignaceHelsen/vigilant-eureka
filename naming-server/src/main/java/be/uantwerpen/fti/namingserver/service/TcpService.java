@@ -1,25 +1,28 @@
 package be.uantwerpen.fti.namingserver.service;
 
+import be.uantwerpen.fti.namingserver.config.NetworkConfig;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 @Service
+@Slf4j
 @AllArgsConstructor
 public class TcpService {
-    public void sendUnicastResponse(int mapSize, String node) {
-        try(Socket socket = new Socket(node,8080)) {
-            // Read file
-            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+    private final NetworkConfig networkConfig;
 
-            // send file size
-            dataOutputStream.writeLong(mapSize);
-
-            dataOutputStream.close();
-
-        }  catch (Exception e){
+    public void sendUnicastResponse(int mapSize, String nodeName) {
+        try (Socket socket = new Socket(nodeName, networkConfig.getSocketPort())) {
+            DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+            outputStream.writeInt(mapSize);
+            outputStream.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

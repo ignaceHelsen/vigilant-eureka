@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 @Service
 @AllArgsConstructor
-public class MulticastListener implements ApplicationListener<ContextRefreshedEvent> {
+public class MulticastListener {
     private final NetworkConfig networkConfig;
     private final MulticastSocket socket;
     private NodeStructure nodeStructure;
@@ -55,10 +55,5 @@ public class MulticastListener implements ApplicationListener<ContextRefreshedEv
 
     public void setNodes(NodeStructure nodeStructure) {
         this.nodeStructure = nodeStructure;
-    }
-
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
-        this.listenForMulticast();
     }
 }

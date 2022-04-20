@@ -31,6 +31,7 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
         InetAddress group;
 
         try {
+            log.info("Registering node");
             socket = new DatagramSocket();
             group = InetAddress.getByName(networkConfig.getMulticastGroupIp());
             byte[] buffer = networkConfig.getHostName().getBytes();
@@ -40,6 +41,7 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
+            log.info("Registering node failed.");
         }
     }
 
@@ -55,15 +57,15 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
         }
     }
 
+    public void setNodeStructure(NodeStructureDto structure) {
+        this.nodeStructure.setNextNode(structure.getNextNode());
+        this.nodeStructure.setPreviousNode(structure.getPreviousNode());
+    }
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) { // TODO replace by ApplicationReadyEvent ?
         // https://stackoverflow.com/questions/20275952/java-listen-to-contextrefreshedevent
         registerNode();
-    }
-
-    public void setNodeStructure(NodeStructureDto structure) {
-        this.nodeStructure.setNextNode(structure.getNextNode());
-        this.nodeStructure.setPreviousNode(structure.getPreviousNode());
+        listener.listenForMulticast();
     }
 }

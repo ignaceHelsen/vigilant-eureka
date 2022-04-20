@@ -13,4 +13,5 @@ public class NetworkConfig {
     private String hostName;
     private int multicastPort;
     private String multicastGroupIp;
+    private int socketPort;
 }
