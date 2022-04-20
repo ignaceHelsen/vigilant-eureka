@@ -67,4 +67,19 @@ public class RestService {
             return false;
         }
     }
+
+    public String requestNodeIpWithHashValue(int hashValue) {
+        log.info("Requesting ip address for file ({})", hashValue);
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/registerfile/%d",
+                    namingServerConfig.getAddress(), namingServerConfig.getPort(), hashValue), String.class);
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            log.error("Client error occurred while requesting ip of node with file({})", hashValue);
+            return null;
+        } catch (HttpServerErrorException e) {
+            log.error("Server error occurred while requesting ip of node with file({})", hashValue);
+            return null;
+        }
+    }
 }

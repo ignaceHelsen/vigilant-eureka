@@ -52,11 +52,11 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
 
     public void nodeShutDown(String hostname, int next, int previous) {
         //Request ip with id next node namingservice (REST)
-
+        String NextIp = restService.requestNodeIpWithHashValue(next);
         //Send id previous to next (TCP)
 
         //Request ip with id previous node namingservice (REST)
-
+        String PreviousIp = restService.requestNodeIpWithHashValue(previous);
         //Send id next to previous (TCP)
 
         restService.removeNode(new RemoveNodeRequest(hostname));

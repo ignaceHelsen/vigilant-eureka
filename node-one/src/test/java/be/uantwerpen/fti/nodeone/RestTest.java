@@ -50,4 +50,11 @@ public class RestTest {
         restService.registerNode(new RegisterNodeRequest(networkConfig.getIpAddress(), networkConfig.getHostName()));
         restService.removeNode(new RemoveNodeRequest(networkConfig.getHostName()));
     }
+
+    @Test
+    public void requestAndPing() throws IOException {
+        String ip = restService.requestNodeIpWithHashValue(1134);
+        InetAddress ipAddress = InetAddress.getByName(ip);
+        assertTrue(ipAddress.isReachable(5000), "Host not reachable");
+    }
 }

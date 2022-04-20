@@ -26,6 +26,18 @@ public class NamingController {
         return ResponseEntity.ok(destination);
     }
 
+    @GetMapping("/registerFile/{hashValue}")
+    public ResponseEntity<String> registerFile(@PathVariable int hashValue) {
+        log.info("Ip address of node with hashValue ({}) has been requested", hashValue);
+        String destination = hashService.getAddressWithKey(hashValue);
+        if (destination == null) {
+            log.info("No node found.");
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(destination);
+    }
+
+
     @PostMapping("/registerNode")
     public ResponseEntity<Boolean> registerNode(@RequestBody RegisterNodeDto registerDto) {
         log.info("The registration of node with hostname ({}) and ip address ({}) has been requested",
