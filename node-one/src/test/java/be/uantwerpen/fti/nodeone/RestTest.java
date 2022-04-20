@@ -4,6 +4,7 @@ import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.RegisterNodeRequest;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
 import be.uantwerpen.fti.nodeone.service.RestService;
+import be.uantwerpen.fti.nodeone.service.TcpService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +21,9 @@ public class RestTest {
 
     @Autowired
     NetworkConfig networkConfig;
+
+    @Autowired
+    TcpService tcpService;
 
     @Test
     public void requestAndPingIp() throws IOException {
@@ -49,5 +53,10 @@ public class RestTest {
     public void registerAndDeleteNodeTest() {
         restService.registerNode(new RegisterNodeRequest(networkConfig.getIpAddress(), networkConfig.getHostName()));
         restService.removeNode(new RemoveNodeRequest(networkConfig.getHostName()));
+    }
+
+    @Test
+    public void azde() {
+        tcpService.sendUpdateNext("localhost", 69);
     }
 }
