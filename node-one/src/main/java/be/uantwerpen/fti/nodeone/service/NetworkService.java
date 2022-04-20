@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -22,7 +23,8 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
     private final NodeStructure nodeStructure;
     private final MulticastListener listener;
 
-    private void registerNode() {
+    @Async
+    public void registerNode() {
         // https://www.baeldung.com/java-broadcast-multicast
         // multicast to group
         DatagramSocket socket;
@@ -30,7 +32,7 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
 
         try {
             socket = new DatagramSocket();
-            group = InetAddress.getByName("230.0.0.0");
+            group = InetAddress.getByName(networkConfig.getMulticastGroupIp());
             byte[] buffer = networkConfig.getHostName().getBytes();
 
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, 4446);
@@ -39,12 +41,6 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // now listen to tcp answers in controller
-    }
-
-    private void listenForMulticast() {
-        listener.setNodes(nodeStructure);
     }
 
     public void removeNode() {
@@ -63,8 +59,7 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) { // TODO replace by ApplicationReadyEvent ?
         // https://stackoverflow.com/questions/20275952/java-listen-to-contextrefreshedevent
-        this.registerNode();
-        listenForMulticast();
+        registerNode();
     }
 
     public void setNodeStructure(NodeStructureDto structure) {

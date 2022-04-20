@@ -2,7 +2,11 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -11,19 +15,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @Service
-public class MulticastListener extends Thread {
+@AllArgsConstructor
+public class MulticastListener implements ApplicationListener<ContextRefreshedEvent> {
     private final NetworkConfig networkConfig;
     private final MulticastSocket socket;
     private NodeStructure nodeStructure;
 
-    public MulticastListener(NetworkConfig networkConfig, MulticastSocket socket) {
-        this.networkConfig = networkConfig;
-        this.socket = socket;
-        this.start();
-    }
-
-    @Override
-    public void run() {
+    @Async
+    public void listenForMulticast() {
         while (true) {
             try {
                 byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
@@ -56,5 +55,10 @@ public class MulticastListener extends Thread {
 
     public void setNodes(NodeStructure nodeStructure) {
         this.nodeStructure = nodeStructure;
+    }
+
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        this.listenForMulticast();
     }
 }
