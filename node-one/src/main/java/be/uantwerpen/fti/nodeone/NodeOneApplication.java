@@ -6,8 +6,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.client.RestTemplate;
 
+@EnableAsync
 @SpringBootApplication
 public class NodeOneApplication {
 	public static void main(String[] args) {

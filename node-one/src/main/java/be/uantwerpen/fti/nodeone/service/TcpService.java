@@ -2,6 +2,7 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.scheduling.annotation.Async;
@@ -14,8 +15,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
-public class TcpService implements ApplicationListener<ContextRefreshedEvent> {
+public class TcpService{
 
     private final NodeStructure nodeStructure;
 
@@ -82,12 +84,5 @@ public class TcpService implements ApplicationListener<ContextRefreshedEvent> {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
-        listenForUpdateNext();
-        listenForUpdatePrevious();
     }
 }
