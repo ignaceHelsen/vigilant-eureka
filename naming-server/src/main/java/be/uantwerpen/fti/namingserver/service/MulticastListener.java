@@ -1,6 +1,10 @@
 package be.uantwerpen.fti.namingserver.service;
 
 import be.uantwerpen.fti.namingserver.config.NetworkConfig;
+import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -8,22 +12,15 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 @Service
-public class MulticastListener extends Thread {
+@AllArgsConstructor
+public class MulticastListener implements ApplicationListener<ContextRefreshedEvent> {
     private final NetworkConfig networkConfig;
     private final HashService hashService;
     private final TcpService tcpService;
     private final MulticastSocket socket;
 
-    public MulticastListener(NetworkConfig networkConfig, HashService hashService, TcpService tcpService, MulticastSocket socket) {
-        this.networkConfig = networkConfig;
-        this.hashService = hashService;
-        this.tcpService = tcpService;
-        this.socket = socket;
-        this.start();
-    }
-
-    @Override
-    public void run() {
+    @Async
+    public void listenForMulticast() {
         while (true) {
             try {
                 byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
@@ -42,5 +39,11 @@ public class MulticastListener extends Thread {
                 e.printStackTrace();
             }
         }
+    }
+
+    // if everything has loaded
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        this.listenForMulticast();
     }
 }
