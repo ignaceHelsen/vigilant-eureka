@@ -20,9 +20,6 @@ import java.net.*;
 @RequiredArgsConstructor
 public class NetworkService {
     private final NetworkConfig networkConfig;
-    private final RestService restService;
-    private final NodeStructure nodeStructure;
-    private final MulticastListener listener;
 
     @Async
     public void registerNode() {
@@ -32,34 +29,17 @@ public class NetworkService {
         InetAddress group;
 
         try {
-            log.info("Registering node");
+            log.info(String.format("Registering node: %s", networkConfig.getHostName()));
             socket = new DatagramSocket();
             group = InetAddress.getByName(networkConfig.getMulticastGroupIp());
             byte[] buffer = networkConfig.getHostName().getBytes();
 
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, 4446);
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, networkConfig.getMulticastPort());
             socket.send(packet);
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
             log.info("Registering node failed.");
         }
-    }
-
-    public void removeNode() {
-        RemoveNodeRequest removeNodeRequest = new RemoveNodeRequest(networkConfig.getHostName());
-        boolean success = restService.removeNode(removeNodeRequest);
-
-        if (success) {
-            log.info("Removing node was successful");
-        } else {
-            log.warn("Removing node failed");
-            // Handle failure
-        }
-    }
-
-    public void setNodeStructure(NodeStructureDto structure) {
-        this.nodeStructure.setNextNode(structure.getNextNode());
-        this.nodeStructure.setPreviousNode(structure.getPreviousNode());
     }
 }

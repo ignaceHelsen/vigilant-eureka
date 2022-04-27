@@ -35,9 +35,10 @@ public class MulticastListener {
                 // ignore if same node
                 if (nodeName.equals(networkConfig.getHostName())) continue;
 
+                // TODO: call naming server for the hash
                 int nodeHash = hashService.calculateHash(nodeName);
 
-                // calculate own hash
+                // TODO: call naming server for the hash
                 int ownHash = hashService.calculateHash(networkConfig.getHostName());
                 nodeStructure.setCurrentHash(ownHash);
 
@@ -48,9 +49,5 @@ public class MulticastListener {
                 e.printStackTrace();
             }
         }
-    }
-
-    public void setNodes(NodeStructure nodeStructure) {
-        this.nodeStructure = nodeStructure;
     }
 }

@@ -19,8 +19,8 @@ public class MulticastConfig {
         try {
             MulticastSocket socket = new MulticastSocket(networkConfig.getMulticastPort());
             SocketAddress group = new InetSocketAddress(networkConfig.getMulticastGroupIp(), networkConfig.getMulticastPort());
-            InetAddress addresss = InetAddress.getByName(networkConfig.getMulticastGroupIp());
-            socket.joinGroup(group, NetworkInterface.getByInetAddress(addresss));
+            InetAddress address = InetAddress.getByName(networkConfig.getMulticastGroupIp());
+            socket.joinGroup(group, NetworkInterface.getByInetAddress(address));
             return socket;
         } catch (IOException e) {
             e.printStackTrace();
