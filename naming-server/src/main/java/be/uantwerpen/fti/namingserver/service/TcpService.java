@@ -14,12 +14,13 @@ import java.net.Socket;
 public class TcpService {
     private final NetworkConfig networkConfig;
 
-    public void sendUnicastResponse(int mapSize, String nodeName) {
-        try (Socket socket = new Socket(nodeName, networkConfig.getSocketPort())) {
+    public void sendUnicastResponse(int mapSize, String ipAddress) {
+        try (Socket socket = new Socket(ipAddress, networkConfig.getSocketPort())) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(mapSize);
             outputStream.close();
         } catch (IOException e) {
+            log.warn("Something went wrong with unicast to node ({})", ipAddress);
             e.printStackTrace();
         }
     }
