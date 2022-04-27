@@ -1,5 +1,7 @@
 package be.uantwerpen.fti.namingserver.controller;
 
+import be.uantwerpen.fti.namingserver.controller.dto.RegisterNodeDto;
+import be.uantwerpen.fti.namingserver.controller.dto.RemoveNodeDto;
 import be.uantwerpen.fti.namingserver.service.HashService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,8 +42,8 @@ public class NamingController {
     public ResponseEntity<Boolean> registerNode(@RequestBody RegisterNodeDto registerDto) {
         log.info("The registration of node with hostname ({}) and ip address ({}) has been requested",
                 registerDto.getHostname(), registerDto.getIpAddress());
-        boolean succes = hashService.registerNode(registerDto.getIpAddress(), registerDto.getHostname());
-        return ResponseEntity.ok(succes);
+        boolean success = hashService.registerNode(registerDto.getIpAddress(), registerDto.getHostname());
+        return ResponseEntity.ok(success);
     }
 
     @DeleteMapping("/removeNode")
