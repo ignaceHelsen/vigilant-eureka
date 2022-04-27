@@ -12,6 +12,4 @@ public class NodeStructure {
     private int previousNode; // contains a hash
     private int currentHash; // contains a hash
     private int nextNode; // contains a hash
-    int next;
-    int previous;
 }

@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -53,7 +54,7 @@ public class TcpService {
                     try {
                         DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
                         int newNextNode = inputStream.readInt();
-                        nodeStructure.setNext(newNextNode);
+                        nodeStructure.setNextNode(newNextNode);
                         inputStream.close();
                         clientSocket.close();
                     } catch (IOException e) {
@@ -76,7 +77,7 @@ public class TcpService {
                     try {
                         DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
                         int newPreviousNode = inputStream.readInt();
-                        nodeStructure.setPrevious(newPreviousNode);
+                        nodeStructure.setPreviousNode(newPreviousNode);
                         inputStream.close();
                     } catch (IOException e) {
                         e.printStackTrace();

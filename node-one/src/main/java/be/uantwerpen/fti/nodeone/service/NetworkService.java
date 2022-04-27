@@ -50,7 +50,7 @@ public class NetworkService {
     }
 
     public void nodeShutDown() {
-        nodeShutDown(networkConfig.getHostName(), nodeStructure.getNext(), nodeStructure.getPrevious());
+        nodeShutDown(networkConfig.getHostName(), nodeStructure.getNextNode(), nodeStructure.getPreviousNode());
     }
 
 
@@ -70,11 +70,5 @@ public class NetworkService {
         NextAndPreviousNode nextAndPrevious = restService.getNextAndPrevious(hostname);
         tcpService.sendUpdatePrevious(nextAndPrevious.getIpNext(), nextAndPrevious.getIdPrevious());
         tcpService.sendUpdatePrevious(nextAndPrevious.getIpPrevious(), nextAndPrevious.getIdNext());
-    }
-
-
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
-        //registerNode();
     }
 }

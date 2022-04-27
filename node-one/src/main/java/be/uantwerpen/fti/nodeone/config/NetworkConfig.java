@@ -32,7 +32,7 @@ public class NetworkConfig {
 
     @Bean
     public NodeStructure nodeStructure() {
-        return new NodeStructure(0,0);
+        return new NodeStructure(0,0,0);
     }
 
     @Bean
