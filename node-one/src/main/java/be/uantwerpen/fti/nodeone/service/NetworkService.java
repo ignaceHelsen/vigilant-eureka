@@ -77,6 +77,8 @@ public class NetworkService {
         NextAndPreviousNode nextAndPrevious = restService.getNextAndPrevious(hashNode);
         sendUpdateNext(nextAndPrevious.getIpNext(), nextAndPrevious.getIdNext(), nextAndPrevious.getIdPrevious());
         sendUpdatePrevious(nextAndPrevious.getIpPrevious(), nextAndPrevious.getIdPrevious(), nextAndPrevious.getIdNext());
+        restService.removeNode(new RemoveNodeRequest(hashNode));
+
     }
 
     public void sendUpdateNext(String ipAddress, int idNext, int newNextNode) {
