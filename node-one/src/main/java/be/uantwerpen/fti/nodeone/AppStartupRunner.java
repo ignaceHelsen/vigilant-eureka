@@ -1,6 +1,6 @@
 package be.uantwerpen.fti.nodeone;
 
-import be.uantwerpen.fti.nodeone.service.TcpService;
+import be.uantwerpen.fti.nodeone.service.TcpListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AppStartupRunner implements ApplicationRunner {
 
-    private final TcpService tcpService;
+    private final TcpListener tcpService;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {

@@ -1,9 +1,7 @@
 package be.uantwerpen.fti.nodeone.config;
 
 import be.uantwerpen.fti.nodeone.ExampleServletContextListener;
-import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.service.NetworkService;
-import be.uantwerpen.fti.nodeone.service.TcpService;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -26,14 +24,6 @@ public class NetworkConfig {
     private int multicastPort;
     private String multicastGroupIp;
     private int socketPort;
-
-
-
-
-    @Bean
-    public NodeStructure nodeStructure() {
-        return new NodeStructure(0,0,0);
-    }
 
     @Bean
     ServletListenerRegistrationBean<ServletContextListener> servletListener(NetworkService networkService) {

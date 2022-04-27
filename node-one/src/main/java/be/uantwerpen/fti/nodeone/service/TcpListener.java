@@ -14,7 +14,7 @@ import java.net.Socket;
 
 @Service
 @AllArgsConstructor
-public class TcpService {
+public class TcpListener {
     private final HashService hashService;
     private final NodeStructure nodeStructure;
     private final NetworkConfig networkConfig;
@@ -36,6 +36,7 @@ public class TcpService {
                         clientSocket.close();
                     } catch (IOException e) {
                         e.printStackTrace();
+
                     }
                 }).start();
             }
@@ -86,26 +87,6 @@ public class TcpService {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void sendUpdateNext(String ipAddress, int newNextNode) {
-        try (Socket socket = new Socket(ipAddress, 5000)) {
-            DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
-            outputStream.writeInt(newNextNode);
-            outputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void sendUpdatePrevious(String ipAddress, int newPreviousNode) {
-        try (Socket socket = new Socket(ipAddress, 5000)) {
-            DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
-            outputStream.writeInt(newPreviousNode);
-            outputStream.close();
-        } catch (IOException e) {
             e.printStackTrace();
         }
     }
