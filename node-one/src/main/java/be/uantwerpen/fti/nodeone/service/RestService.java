@@ -76,10 +76,10 @@ public class RestService {
                     namingServerConfig.getAddress(), namingServerConfig.getPort(), hashValue), String.class);
             return response.getBody();
         } catch (HttpClientErrorException e) {
-            log.error("Client error occurred while requesting ip of node with file({})", hashValue);
+            log.error("Client error occurred while requesting ip of node with hash value({})", hashValue);
             return null;
         } catch (HttpServerErrorException e) {
-            log.error("Server error occurred while requesting ip of node with file({})", hashValue);
+            log.error("Server error occurred while requesting ip of node with hash value({})", hashValue);
             return null;
         }
     }
@@ -97,5 +97,4 @@ public class RestService {
             return null;
         }
     }
-
 }

@@ -39,7 +39,7 @@ public class NetworkService {
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
-            log.info("Registering node failed.");
+            log.warn("Registering node failed.");
         }
     }
 
@@ -49,6 +49,7 @@ public class NetworkService {
 
 
     public void nodeShutDown(String hostname, int next, int previous) {
+        log.info("Node request to shut down, next and previous node will be updated.");
         //Request ip with id next node namingservice (REST)
         String NextIp = restService.requestNodeIpWithHashValue(next);
         //Send id previous to next (TCP)
@@ -61,6 +62,7 @@ public class NetworkService {
     }
 
     public void nodeFailure(String hostname) {
+        log.info("Failed to communicate with other nodes, next and previous node will be updated. Current node will be removed.");
         NextAndPreviousNode nextAndPrevious = restService.getNextAndPrevious(hostname);
         sendUpdatePrevious(nextAndPrevious.getIpNext(), nextAndPrevious.getIdPrevious());
         sendUpdatePrevious(nextAndPrevious.getIpPrevious(), nextAndPrevious.getIdNext());
@@ -68,21 +70,25 @@ public class NetworkService {
 
     public void sendUpdateNext(String ipAddress, int newNextNode) {
         try (Socket socket = new Socket(ipAddress, 5000)) {
+            log.info("Updating the 'next node' parameter of the previous node.");
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(newNextNode);
             outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+            log.warn("'Next node' parameter of previous node failed to update.");
         }
     }
 
     public void sendUpdatePrevious(String ipAddress, int newPreviousNode) {
         try (Socket socket = new Socket(ipAddress, 5000)) {
+            log.info("Updating the 'previous node' parameter of the next node.");
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(newPreviousNode);
             outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+            log.warn("'Previous node' parameter of next node failed to update.");
         }
     }
 
