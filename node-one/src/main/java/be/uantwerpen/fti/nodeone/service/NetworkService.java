@@ -1,6 +1,7 @@
 package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RegisterNodeRequest;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
@@ -54,7 +55,6 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
     }
 
 
-
     public void nodeShutDown(String hostname, int next, int previous) {
         //Request ip with id next node namingservice (REST)
         String NextIp = restService.requestNodeIpWithHashValue(next);
@@ -67,9 +67,15 @@ public class NetworkService implements ApplicationListener<ContextRefreshedEvent
         restService.removeNode(new RemoveNodeRequest(hostname));
     }
 
+    public void nodeFailure(String hostname) {
+        NextAndPreviousNode nextAndPrevious = restService.getNextAndPrevious(hostname);
+        tcpService.sendUpdatePrevious(nextAndPrevious.getIpNext(), nextAndPrevious.getIdPrevious());
+        tcpService.sendUpdatePrevious(nextAndPrevious.getIpPrevious(), nextAndPrevious.getIdNext());
+    }
+
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        registerNode();
+        //registerNode();
     }
 }

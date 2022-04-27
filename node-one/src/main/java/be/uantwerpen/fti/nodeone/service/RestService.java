@@ -1,6 +1,7 @@
 package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
+import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.RegisterNodeRequest;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
 import lombok.RequiredArgsConstructor;
@@ -60,16 +61,16 @@ public class RestService {
 
             return Boolean.TRUE.equals(response.getBody());
         } catch (HttpClientErrorException e) {
-            log.error("Client error occurred while registering node");
+            log.error("Client error occurred while removing node");
             return false;
         } catch (HttpServerErrorException e) {
-            log.error("Server error occurred while registering node");
+            log.error("Server error occurred while removing node");
             return false;
         }
     }
 
     public String requestNodeIpWithHashValue(int hashValue) {
-        log.info("Requesting ip address for file ({})", hashValue);
+        log.info("Requesting ip address with hash value for file ({})", hashValue);
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/registerfile/%d",
                     namingServerConfig.getAddress(), namingServerConfig.getPort(), hashValue), String.class);
@@ -82,4 +83,19 @@ public class RestService {
             return null;
         }
     }
+
+    public NextAndPreviousNode getNextAndPrevious(String hostname) {
+        try {
+            ResponseEntity<NextAndPreviousNode> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%s",
+                    namingServerConfig.getAddress(), namingServerConfig.getPort(), hostname), NextAndPreviousNode.class);
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            log.error("Client error occurred while requesting next and previous node from node with hostname {}", hostname);
+            return null;
+        } catch (HttpServerErrorException e) {
+            log.error("Server error occurred while requesting next and previous node from node with hostname {}", hostname);
+            return null;
+        }
+    }
+
 }
