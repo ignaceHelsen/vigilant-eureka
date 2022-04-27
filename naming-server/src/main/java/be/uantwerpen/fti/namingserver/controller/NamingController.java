@@ -1,5 +1,6 @@
 package be.uantwerpen.fti.namingserver.controller;
 
+import be.uantwerpen.fti.namingserver.controller.dto.NextAndPreviousDto;
 import be.uantwerpen.fti.namingserver.controller.dto.RegisterNodeDto;
 import be.uantwerpen.fti.namingserver.controller.dto.RemoveNodeDto;
 import be.uantwerpen.fti.namingserver.service.HashService;
@@ -48,10 +49,14 @@ public class NamingController {
 
     @DeleteMapping("/removeNode")
     public ResponseEntity<Boolean> removeNode(@RequestBody RemoveNodeDto removeDto) {
-        log.info("The removal of node with hostname ({}) has been requested", removeDto.getHostname());
-        hashService.removeNode(removeDto.getHostname());
+        log.info("The removal of node with hostname ({}) has been requested", removeDto.getCurrentHash());
+        hashService.removeNode(removeDto.getCurrentHash());
         return ResponseEntity.ok(true);
     }
 
-
+    @GetMapping("/getNextAndPrevious/{hash}")
+    public ResponseEntity<NextAndPreviousDto> getNextAndPrevious(@PathVariable int hash) {
+        NextAndPreviousDto nextAndPrevious = hashService.getNextAndPrevious(hash);
+        return ResponseEntity.ok(nextAndPrevious);
+    }
 }

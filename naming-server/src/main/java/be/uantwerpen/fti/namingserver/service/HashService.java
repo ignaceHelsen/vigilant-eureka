@@ -64,9 +64,13 @@ public class HashService {
 
     public void removeNode(String hostname) {
         int hash = calculateHash(hostname);
-        nodes.remove(hash);
+        removeNode(hash);
+    }
+
+    public void removeNode(int currentHash) {
+        nodes.remove(currentHash);
         updateMap();
-        log.info("Node with hostname ({}) has been removed to the map", hostname);
+        log.info("Node with hostname ({}) has been removed to the map", currentHash);
 
     }
 
@@ -117,17 +121,17 @@ public class HashService {
         return nodes.get(key);
     }
 
-    public int getNext(String hostname){
-        return nodes.higherKey(calculateHash(hostname));
+    public int getNext(int currentHash){
+        return nodes.higherKey(currentHash);
     }
 
-    public int getPrevious(String hostname) {
-        return nodes.lowerKey(calculateHash(hostname));
+    public int getPrevious(int currentHash) {
+        return nodes.lowerKey(currentHash);
     }
 
-    public NextAndPreviousDto getNextAndPrevious(String hostname){
-        int idNext = getNext(hostname);
-        int idPrevious = getPrevious(hostname);
+    public NextAndPreviousDto getNextAndPrevious(int currentHash){
+        int idNext = getNext(currentHash);
+        int idPrevious = getPrevious(currentHash);
         return new NextAndPreviousDto(idNext, getAddressWithKey(idNext), idPrevious, getAddressWithKey(idPrevious));
     }
 
