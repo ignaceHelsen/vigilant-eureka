@@ -17,6 +17,7 @@ import java.util.Arrays;
 @Service
 @AllArgsConstructor
 public class MulticastListener {
+    private final HashService hashService;
     private final NetworkConfig networkConfig;
     private final MulticastSocket socket;
     private NodeStructure nodeStructure;
@@ -34,10 +35,10 @@ public class MulticastListener {
                 // ignore if same node
                 if (nodeName.equals(networkConfig.getHostName())) continue;
 
-                int nodeHash = calculateHash(nodeName);
+                int nodeHash = hashService.calculateHash(nodeName);
 
                 // calculate own hash
-                int ownHash = calculateHash(networkConfig.getHostName());
+                int ownHash = hashService.calculateHash(networkConfig.getHostName());
                 nodeStructure.setCurrentHash(ownHash);
 
                 if (nodeHash < ownHash) nodeStructure.setPreviousNode(nodeHash);
@@ -47,10 +48,6 @@ public class MulticastListener {
                 e.printStackTrace();
             }
         }
-    }
-
-    public int calculateHash(String hostname) {
-        return (int) (((long) hostname.hashCode() + (long) Integer.MAX_VALUE) * ((double) Short.MAX_VALUE / (2 * (double) Integer.MAX_VALUE)));
     }
 
     public void setNodes(NodeStructure nodeStructure) {
