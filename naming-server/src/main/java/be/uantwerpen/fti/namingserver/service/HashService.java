@@ -111,4 +111,8 @@ public class HashService {
             log.error("Unable to create or find nodes.json.");
         }
     }
+
+    public int mapSize() {
+        return nodes.size();
+    }
 }

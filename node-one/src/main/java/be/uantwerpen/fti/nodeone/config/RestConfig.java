@@ -1,15 +1,17 @@
 package be.uantwerpen.fti.nodeone.config;
 
+import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
+@EnableAsync
 public class RestConfig {
-
     @Bean
     public RestTemplate restTemplate() {
         var factory = new SimpleClientHttpRequestFactory();
@@ -23,5 +25,10 @@ public class RestConfig {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
+    }
+
+    @Bean
+    public NodeStructure nodeStructure() {
+        return new NodeStructure(0, 0, 0);
     }
 }
