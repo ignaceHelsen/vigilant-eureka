@@ -7,6 +7,7 @@ import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.DataOutputStream;
@@ -43,6 +44,16 @@ public class NetworkService {
         }
     }
 
+    // TODO: regularly broadcast (unicast) presence to other nodes (=next and previous node)
+    @Scheduled(initialDelay = 30 * 1000, fixedRate = 30 * 1000) // start after 30s after startup and send every 30s.
+    private void BroadcastPresence() {
+        log.info(String.format("Current previous node: %d\t Current next node: %d", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
+        // first go to naming server to get ip of previous and next node
+        // send notification to next
+
+        // send notification to previous
+    }
+
     public void nodeShutDown() {
         nodeShutDown(networkConfig.getHostName(), nodeStructure.getNextNode(), nodeStructure.getPreviousNode());
     }
@@ -66,8 +77,13 @@ public class NetworkService {
         sendUpdatePrevious(nextAndPrevious.getIpPrevious(), nextAndPrevious.getIdNext());
     }
 
+    /**
+     * For shutdown
+     * @param ipAddress next node ip address
+     * @param newNextNode
+     */
     public void sendUpdateNext(String ipAddress, int newNextNode) {
-        try (Socket socket = new Socket(ipAddress, 5000)) {
+        try (Socket socket = new Socket(ipAddress, networkConfig.getSocketPort())) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(newNextNode);
             outputStream.close();
@@ -76,8 +92,13 @@ public class NetworkService {
         }
     }
 
+    /**
+     *
+     * @param ipAddress
+     * @param newPreviousNode
+     */
     public void sendUpdatePrevious(String ipAddress, int newPreviousNode) {
-        try (Socket socket = new Socket(ipAddress, 5000)) {
+        try (Socket socket = new Socket(ipAddress, networkConfig.getSocketPort())) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(newPreviousNode);
             outputStream.close();
@@ -85,5 +106,4 @@ public class NetworkService {
             e.printStackTrace();
         }
     }
-
 }
