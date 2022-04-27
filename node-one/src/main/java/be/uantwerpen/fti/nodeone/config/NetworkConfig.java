@@ -9,17 +9,24 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.context.annotation.Configuration;
 
 import javax.servlet.ServletContextListener;
 
+
 @Getter
 @Setter
 @Configuration
+@EnableAsync
 @ConfigurationProperties(prefix = "network")
 public class NetworkConfig {
     private String ipAddress;
     private String hostName;
+    private int multicastPort;
+    private String multicastGroupIp;
+    private int socketPort;
+
 
 
 

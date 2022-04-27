@@ -130,4 +130,8 @@ public class HashService {
         int idPrevious = getPrevious(hostname);
         return new NextAndPreviousDto(idNext, getAddressWithKey(idNext), idPrevious, getAddressWithKey(idPrevious));
     }
+
+    public int mapSize() {
+        return nodes.size();
+    }
 }

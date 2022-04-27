@@ -1,7 +1,5 @@
 package be.uantwerpen.fti.namingserver.controller;
 
-import be.uantwerpen.fti.namingserver.controller.dto.RegisterNodeDto;
-import be.uantwerpen.fti.namingserver.controller.dto.RemoveNodeDto;
 import be.uantwerpen.fti.namingserver.service.HashService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
