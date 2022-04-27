@@ -1,14 +1,16 @@
 package be.uantwerpen.fti.nodeone.config;
 
 import be.uantwerpen.fti.nodeone.ExampleServletContextListener;
+import be.uantwerpen.fti.nodeone.service.MulticastListener;
 import be.uantwerpen.fti.nodeone.service.NetworkService;
+import be.uantwerpen.fti.nodeone.service.TcpListener;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import javax.servlet.ServletContextListener;
 
@@ -24,12 +26,4 @@ public class NetworkConfig {
     private int multicastPort;
     private String multicastGroupIp;
     private int socketPort;
-
-    @Bean
-    ServletListenerRegistrationBean<ServletContextListener> servletListener(NetworkService networkService) {
-        ServletListenerRegistrationBean<ServletContextListener> srb
-                = new ServletListenerRegistrationBean<>();
-        srb.setListener(new ExampleServletContextListener(networkService));
-        return srb;
-    }
 }
