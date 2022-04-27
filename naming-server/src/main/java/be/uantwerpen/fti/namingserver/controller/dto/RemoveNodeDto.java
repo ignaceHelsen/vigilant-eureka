@@ -6,5 +6,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class RemoveNodeDto {
-    private String hostname;
+    private int currentHash;
 }

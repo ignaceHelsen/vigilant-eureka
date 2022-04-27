@@ -55,55 +55,48 @@ public class NetworkService {
     }
 
     public void nodeShutDown() {
-        nodeShutDown(networkConfig.getHostName(), nodeStructure.getNextNode(), nodeStructure.getPreviousNode());
+        nodeShutDown(nodeStructure.getCurrentHash(), nodeStructure.getNextNode(), nodeStructure.getPreviousNode());
     }
 
 
-    public void nodeShutDown(String hostname, int next, int previous) {
+    public void nodeShutDown(int currentHash, int nextNode, int previousNode) {
         //Request ip with id next node namingservice (REST)
-        String NextIp = restService.requestNodeIpWithHashValue(next);
+        String NextIp = restService.requestNodeIpWithHashValue(nextNode);
         //Send id previous to next (TCP)
-        sendUpdatePrevious(NextIp, previous);
+        sendUpdatePrevious(NextIp, nextNode, previousNode);
         //Request ip with id previous node namingservice (REST)
-        String PreviousIp = restService.requestNodeIpWithHashValue(previous);
+        String PreviousIp = restService.requestNodeIpWithHashValue(previousNode);
         //Send id next to previous (TCP)
-        sendUpdateNext(PreviousIp, next);
-        restService.removeNode(new RemoveNodeRequest(hostname));
+        sendUpdateNext(PreviousIp, previousNode, nextNode);
+        restService.removeNode(new RemoveNodeRequest(currentHash));
     }
 
-    public void nodeFailure(String hostname) {
-        NextAndPreviousNode nextAndPrevious = restService.getNextAndPrevious(hostname);
-        sendUpdatePrevious(nextAndPrevious.getIpNext(), nextAndPrevious.getIdPrevious());
-        sendUpdatePrevious(nextAndPrevious.getIpPrevious(), nextAndPrevious.getIdNext());
+    public void nodeFailure(int hashNode) {
+        NextAndPreviousNode nextAndPrevious = restService.getNextAndPrevious(hashNode);
+        sendUpdateNext(nextAndPrevious.getIpNext(), nextAndPrevious.getIdNext(), nextAndPrevious.getIdPrevious());
+        sendUpdatePrevious(nextAndPrevious.getIpPrevious(), nextAndPrevious.getIdPrevious(), nextAndPrevious.getIdNext());
     }
 
-    /**
-     * For shutdown
-     * @param ipAddress next node ip address
-     * @param newNextNode
-     */
-    public void sendUpdateNext(String ipAddress, int newNextNode) {
-        try (Socket socket = new Socket(ipAddress, networkConfig.getSocketPort())) {
+    public void sendUpdateNext(String ipAddress, int idNext, int newNextNode) {
+        try (Socket socket = new Socket(ipAddress, 5000)) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(newNextNode);
             outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+            nodeFailure(idNext);
         }
     }
 
-    /**
-     *
-     * @param ipAddress
-     * @param newPreviousNode
-     */
-    public void sendUpdatePrevious(String ipAddress, int newPreviousNode) {
-        try (Socket socket = new Socket(ipAddress, networkConfig.getSocketPort())) {
+    public void sendUpdatePrevious(String ipAddress, int idPrevious, int newPreviousNode) {
+        try (Socket socket = new Socket(ipAddress, 5000)) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(newPreviousNode);
             outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+            nodeFailure(idPrevious);
         }
     }
+
 }
