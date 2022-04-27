@@ -84,16 +84,16 @@ public class RestService {
         }
     }
 
-    public NextAndPreviousNode getNextAndPrevious(String hostname) {
+    public NextAndPreviousNode getNextAndPrevious(int hash) {
         try {
             ResponseEntity<NextAndPreviousNode> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%s",
-                    namingServerConfig.getAddress(), namingServerConfig.getPort(), hostname), NextAndPreviousNode.class);
+                    namingServerConfig.getAddress(), namingServerConfig.getPort(), hash), NextAndPreviousNode.class);
             return response.getBody();
         } catch (HttpClientErrorException e) {
-            log.error("Client error occurred while requesting next and previous node from node with hostname {}", hostname);
+            log.error("Client error occurred while requesting next and previous node from node with hostname {}", hash);
             return null;
         } catch (HttpServerErrorException e) {
-            log.error("Server error occurred while requesting next and previous node from node with hostname {}", hostname);
+            log.error("Server error occurred while requesting next and previous node from node with hostname {}", hash);
             return null;
         }
     }

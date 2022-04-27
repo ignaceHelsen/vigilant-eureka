@@ -2,6 +2,7 @@ package be.uantwerpen.fti.namingserver.service;
 
 import be.uantwerpen.fti.namingserver.config.NetworkConfig;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.scheduling.annotation.Async;
@@ -12,6 +13,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 @Service
+@Slf4j
 @AllArgsConstructor
 public class MulticastListener {
     private final NetworkConfig networkConfig;
@@ -36,6 +38,7 @@ public class MulticastListener {
                 tcpService.sendUnicastResponse(hashService.mapSize(), nodeName);
 
             } catch (IOException e) {
+                log.warn("Something went wrong while listening for multicast requests");
                 e.printStackTrace();
             }
         }
