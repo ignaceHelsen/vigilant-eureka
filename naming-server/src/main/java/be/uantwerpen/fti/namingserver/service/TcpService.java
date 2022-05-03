@@ -19,7 +19,7 @@ public class TcpService {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(mapSize);
             outputStream.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.warn("Something went wrong while establishing tcp connection to node ({})", ipAddress);
             e.printStackTrace();
         }

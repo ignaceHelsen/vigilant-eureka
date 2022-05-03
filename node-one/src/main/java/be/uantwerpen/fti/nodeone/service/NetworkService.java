@@ -57,7 +57,7 @@ public class NetworkService {
 
     @Scheduled(fixedRate = 30 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
     public void BroadcastPresence() {
-        log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
+        log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d (0 means the current node is its own next node)", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
         // first go to naming server to get ip of previous and next node
         try {
             ResponseEntity<NextAndPreviousNode> ipNodes = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%d",

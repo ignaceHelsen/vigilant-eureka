@@ -2,6 +2,7 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
+import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -11,29 +12,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 @Service
+@AllArgsConstructor
 public class TcpListener {
     private final HashCalculator hashCalculator;
     private final NodeStructure nodeStructure;
     private final NetworkConfig networkConfig;
-    private final int unicastResponsePort;
-    private final int unicastNextNodePort;
-    private final int unicastPreviousNodePort;
-
-
-    public TcpListener(HashCalculator hashCalculator, NodeStructure nodeStructure, NetworkConfig networkConfig) {
-        this.hashCalculator = hashCalculator;
-        this.nodeStructure = nodeStructure;
-        this.networkConfig = networkConfig;
-
-        unicastResponsePort = networkConfig.getSocketPort();
-        // listenForUpdateNext runs on port 5000, we just add one so we don't get an PortAlreadyInUse error.
-        unicastNextNodePort = networkConfig.getSocketPort() + 1;
-        unicastPreviousNodePort = networkConfig.getSocketPort() + 2;
-    }
 
     @Async
     public void listenUnicastResponse() {
-        try (ServerSocket serverSocket = new ServerSocket(unicastResponsePort)) {
+        try (ServerSocket serverSocket = new ServerSocket(networkConfig.getSocketPort())) {
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 new Thread(() -> {
@@ -60,7 +47,7 @@ public class TcpListener {
 
     @Async
     public void listenForUpdateNext() {
-        try (ServerSocket serverSocket = new ServerSocket(unicastNextNodePort)) {
+        try (ServerSocket serverSocket = new ServerSocket(networkConfig.getUpdateNextSocketPort())) {
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 new Thread(() -> {
@@ -82,7 +69,7 @@ public class TcpListener {
 
     @Async
     public void listenForUpdatePrevious() {
-        try (ServerSocket serverSocket = new ServerSocket(unicastPreviousNodePort)) {
+        try (ServerSocket serverSocket = new ServerSocket(networkConfig.getUpdatePreviousSocketPort())) {
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 new Thread(() -> {
