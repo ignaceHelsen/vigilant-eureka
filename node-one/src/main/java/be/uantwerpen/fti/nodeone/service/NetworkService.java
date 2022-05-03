@@ -81,7 +81,7 @@ public class NetworkService {
                 }
             }
         } catch(ResourceAccessException e) {
-            log.error("Connection time out to {}:{}", namingServerConfig.getAddress(), namingServerConfig.getPort());
+            log.error("Connection to {}:{} timed out.", namingServerConfig.getAddress(), namingServerConfig.getPort());
         }
     }
 
