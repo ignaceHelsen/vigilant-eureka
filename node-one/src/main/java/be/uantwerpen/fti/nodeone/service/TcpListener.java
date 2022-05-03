@@ -12,7 +12,7 @@ import java.net.Socket;
 
 @Service
 public class TcpListener {
-    private final HashCalculator hashService;
+    private final HashCalculator hashCalculator;
     private final NodeStructure nodeStructure;
     private final NetworkConfig networkConfig;
     private final int unicastResponsePort;
@@ -20,8 +20,8 @@ public class TcpListener {
     private final int unicastPreviousNodePort;
 
 
-    public TcpListener(HashCalculator hashService, NodeStructure nodeStructure, NetworkConfig networkConfig) {
-        this.hashService = hashService;
+    public TcpListener(HashCalculator hashCalculator, NodeStructure nodeStructure, NetworkConfig networkConfig) {
+        this.hashCalculator = hashCalculator;
         this.nodeStructure = nodeStructure;
         this.networkConfig = networkConfig;
 
@@ -41,8 +41,8 @@ public class TcpListener {
                         DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
                         int mapSize = inputStream.readInt();
                         if (mapSize == 1) {
-                            nodeStructure.setPreviousNode(hashService.calculateHash(networkConfig.getHostName()));
-                            nodeStructure.setNextNode(hashService.calculateHash(networkConfig.getHostName()));
+                            nodeStructure.setPreviousNode(hashCalculator.calculateHash(networkConfig.getHostName()));
+                            nodeStructure.setNextNode(hashCalculator.calculateHash(networkConfig.getHostName()));
                         }
                         inputStream.close();
                         clientSocket.close();
@@ -75,7 +75,6 @@ public class TcpListener {
                     }
                 }).start();
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
