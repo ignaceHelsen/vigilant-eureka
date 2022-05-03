@@ -20,7 +20,7 @@ public class TcpService {
             outputStream.writeInt(mapSize);
             outputStream.close();
         } catch (IOException e) {
-            log.warn("Something went wrong with unicast to node ({})", ipAddress);
+            log.warn("Something went wrong while establishing tcp connection to node ({})", ipAddress);
             e.printStackTrace();
         }
     }

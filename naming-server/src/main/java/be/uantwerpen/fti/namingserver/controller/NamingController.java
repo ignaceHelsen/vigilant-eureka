@@ -56,7 +56,7 @@ public class NamingController {
 
     @GetMapping("/getNextAndPrevious/{hash}")
     public ResponseEntity<NextAndPreviousDto> getNextAndPrevious(@PathVariable int hash) {
-        log.info("The next and previous node of node{} has been requested", hash);
+        log.info("The next and previous node of node {} has been requested", hash);
         NextAndPreviousDto nextAndPrevious = hashService.getNextAndPrevious(hash);
         return ResponseEntity.ok(nextAndPrevious);
     }
