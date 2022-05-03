@@ -66,8 +66,8 @@ public class TcpListener {
                 new Thread(() -> {
                     try {
                         DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
-                        int newNextNode = inputStream.readInt();
-                        nodeStructure.setNextNode(newNextNode);
+                        int newPreviousNode = inputStream.readInt(); // the receiving body is actually this node's previous node
+                        nodeStructure.setPreviousNode(newPreviousNode);
                         inputStream.close();
                         clientSocket.close();
                     } catch (IOException e) {
@@ -89,8 +89,8 @@ public class TcpListener {
                 new Thread(() -> {
                     try {
                         DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
-                        int newPreviousNode = inputStream.readInt();
-                        nodeStructure.setPreviousNode(newPreviousNode);
+                        int newNextNode = inputStream.readInt();
+                        nodeStructure.setNextNode(newNextNode);
                         inputStream.close();
                     } catch (IOException e) {
                         e.printStackTrace();

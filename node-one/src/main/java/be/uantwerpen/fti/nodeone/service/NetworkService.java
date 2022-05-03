@@ -64,16 +64,20 @@ public class NetworkService {
 
         if (ipNodes.getBody() == null) log.warn("Node could not be found");
         else {
-            // send notification to next
-            updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort());
+            if (ipNodes.getBody().getIdNext() != nodeStructure.getCurrentHash()) {
+                // send notification to next
+                updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort());
+            }
 
-            // send notification to previous
-            updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort());
+            if (ipNodes.getBody().getIdPrevious() != nodeStructure.getCurrentHash()) {
+                // send notification to previous
+                updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort());
+            }
         }
     }
 
-    private void updateNode(String ipNext, int updateNextSocketPort) {
-        try (Socket socket = new Socket(ipNext, updateNextSocketPort)) {
+    private void updateNode(String ip, int port) {
+        try (Socket socket = new Socket(ip, port)) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(nodeStructure.getCurrentHash());
             outputStream.close();
