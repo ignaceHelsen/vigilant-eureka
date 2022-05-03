@@ -65,6 +65,7 @@ public class NetworkService {
 
             if (ipNodes.getBody() == null) log.warn("Node could not be found");
             else {
+                // this is the important part: we need to update our own structure with the new info
                 nodeStructure.setNextNode(ipNodes.getBody().getIdNext());
                 nodeStructure.setPreviousNode(ipNodes.getBody().getIdPrevious());
 
