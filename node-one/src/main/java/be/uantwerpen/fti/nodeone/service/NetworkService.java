@@ -6,6 +6,7 @@ import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,11 +23,11 @@ import java.net.*;
 @Service
 @Slf4j
 @EnableScheduling
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class NetworkService {
     private final NetworkConfig networkConfig;
     private final RestService restService;
-    private NodeStructure nodeStructure;
+    private final NodeStructure nodeStructure;
     private final RestTemplate restTemplate;
     private final NamingServerConfig namingServerConfig;
 
@@ -57,24 +58,25 @@ public class NetworkService {
         log.info(String.format("Current previous node: %d\t Current next node: %d", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
         // first go to naming server to get ip of previous and next node
         ResponseEntity<NextAndPreviousNode> ipNodes = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevios/%d",
-                namingServerConfig.getAddress(), namingServerConfig.getPort(), nodeStructure.getNextNode()), NextAndPreviousNode.class);
+                namingServerConfig.getAddress(), namingServerConfig.getPort(), nodeStructure.getCurrentHash()), NextAndPreviousNode.class);
 
         if (ipNodes.getBody() == null) log.warn("Node could not be found");
         else {
             // send notification to next
-            updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort());
+            updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort(), nodeStructure.getNextNode());
 
             // send notification to previous
-            updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort());
+            updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort(), nodeStructure.getPreviousNode());
         }
     }
 
-    private void updateNode(String ipNext, int updateNextSocketPort) {
+    private void updateNode(String ipNext, int updateNextSocketPort, int hash) {
         try (Socket socket = new Socket(ipNext, updateNextSocketPort)) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(nodeStructure.getCurrentHash());
             outputStream.close();
         } catch (IOException e) {
+            nodeFailure(hash);
             e.printStackTrace();
         }
     }
