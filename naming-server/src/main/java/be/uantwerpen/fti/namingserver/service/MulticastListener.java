@@ -3,13 +3,12 @@ package be.uantwerpen.fti.namingserver.service;
 import be.uantwerpen.fti.namingserver.config.NetworkConfig;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.MulticastSocket;
 import java.nio.charset.StandardCharsets;
 
 @Service

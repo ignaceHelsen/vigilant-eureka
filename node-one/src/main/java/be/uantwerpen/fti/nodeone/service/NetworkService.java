@@ -65,6 +65,9 @@ public class NetworkService {
 
             if (ipNodes.getBody() == null) log.warn("Node could not be found");
             else {
+                nodeStructure.setNextNode(ipNodes.getBody().getIdNext());
+                nodeStructure.setPreviousNode(ipNodes.getBody().getIdPrevious());
+
                 // now send to our peers
                 if (ipNodes.getBody().getIdNext() != nodeStructure.getCurrentHash()) {
                     // send notification to next
@@ -139,8 +142,8 @@ public class NetworkService {
             outputStream.writeInt(newPreviousNode);
             outputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
             log.warn("'Previous node' parameter of next node failed to update.");
+            e.printStackTrace();
             nodeFailure(idPrevious);
         }
     }

@@ -4,8 +4,8 @@ import be.uantwerpen.fti.namingserver.config.NetworkConfig;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.Socket;
 
 @Service
