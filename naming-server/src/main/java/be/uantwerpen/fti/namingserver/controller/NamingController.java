@@ -22,7 +22,7 @@ public class NamingController {
         String destination = hashService.registerFile(filename);
         if (destination == null) {
             log.info("No node found.");
-            return ResponseEcd ntity.badRequest().build();
+            return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(destination);
     }

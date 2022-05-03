@@ -6,7 +6,6 @@ import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,7 @@ import java.net.*;
 @Service
 @Slf4j
 @EnableScheduling
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class NetworkService {
     private final NetworkConfig networkConfig;
     private final RestService restService;
@@ -66,22 +65,23 @@ public class NetworkService {
         else {
             if (ipNodes.getBody().getIdNext() != nodeStructure.getCurrentHash()) {
                 // send notification to next
-                updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort());
+                updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort(), nodeStructure.getNextNode());
             }
 
             if (ipNodes.getBody().getIdPrevious() != nodeStructure.getCurrentHash()) {
                 // send notification to previous
-                updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort());
+                updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort(), nodeStructure.getPreviousNode());
             }
         }
     }
 
-    private void updateNode(String ip, int port) {
+    private void updateNode(String ip, int port, int hash) {
         try (Socket socket = new Socket(ip, port)) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(nodeStructure.getCurrentHash());
             outputStream.close();
         } catch (IOException e) {
+            nodeFailure(hash);
             e.printStackTrace();
         }
     }
