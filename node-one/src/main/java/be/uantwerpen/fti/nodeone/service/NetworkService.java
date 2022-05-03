@@ -1,14 +1,19 @@
 package be.uantwerpen.fti.nodeone.service;
 
+import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -16,11 +21,14 @@ import java.net.*;
 
 @Service
 @Slf4j
+@EnableScheduling
 @RequiredArgsConstructor
 public class NetworkService {
     private final NetworkConfig networkConfig;
     private final RestService restService;
-    private final NodeStructure nodeStructure;
+    private NodeStructure nodeStructure;
+    private final RestTemplate restTemplate;
+    private final NamingServerConfig namingServerConfig;
 
     @Async
     public void registerNode() {
@@ -44,14 +52,31 @@ public class NetworkService {
         }
     }
 
-    // TODO: regularly broadcast (unicast) presence to other nodes (=next and previous node)
-    @Scheduled(initialDelay = 30 * 1000, fixedRate = 30 * 1000) // start after 30s after startup and send every 30s.
-    private void BroadcastPresence() {
+    @Scheduled(fixedRate = 10 * 1000) // start after 30s after startup and send every 30s.
+    public void BroadcastPresence() {
         log.info(String.format("Current previous node: %d\t Current next node: %d", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
         // first go to naming server to get ip of previous and next node
-        // send notification to next
+        ResponseEntity<NextAndPreviousNode> ipNodes = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevios/%d",
+                namingServerConfig.getAddress(), namingServerConfig.getPort(), nodeStructure.getNextNode()), NextAndPreviousNode.class);
 
-        // send notification to previous
+        if (ipNodes.getBody() == null) log.warn("Node could not be found");
+        else {
+            // send notification to next
+            updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort());
+
+            // send notification to previous
+            updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort());
+        }
+    }
+
+    private void updateNode(String ipNext, int updateNextSocketPort) {
+        try (Socket socket = new Socket(ipNext, updateNextSocketPort)) {
+            DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+            outputStream.writeInt(nodeStructure.getCurrentHash());
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void nodeShutDown() {
@@ -98,5 +123,4 @@ public class NetworkService {
             nodeFailure(idPrevious);
         }
     }
-
 }

@@ -3,6 +3,7 @@ package be.uantwerpen.fti.nodeone;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.RegisterNodeRequest;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
+import be.uantwerpen.fti.nodeone.service.HashCalculator;
 import be.uantwerpen.fti.nodeone.service.RestService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,9 @@ public class RestTest {
 
     @Autowired
     NetworkConfig networkConfig;
+
+    @Autowired
+    HashCalculator hashCalculator;
 
     @Test
     public void requestAndPingIp() throws IOException {
@@ -42,13 +46,13 @@ public class RestTest {
 
     @Test
     public void removeNodeTest() {
-        restService.removeNode(new RemoveNodeRequest("host3.group5.6dist"));
+        restService.removeNode(new RemoveNodeRequest(hashCalculator.calculateHash(networkConfig.getHostName())));
     }
 
     @Test
     public void registerAndDeleteNodeTest() {
         restService.registerNode(new RegisterNodeRequest(networkConfig.getIpAddress(), networkConfig.getHostName()));
-        restService.removeNode(new RemoveNodeRequest(networkConfig.getHostName()));
+        restService.removeNode(new RemoveNodeRequest(hashCalculator.calculateHash(networkConfig.getHostName())));
     }
 
     @Test

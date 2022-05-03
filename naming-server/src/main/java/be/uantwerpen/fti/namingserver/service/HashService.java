@@ -70,7 +70,7 @@ public class HashService {
     public void removeNode(int currentHash) {
         nodes.remove(currentHash);
         updateMap();
-        log.info("Node with hostname ({}) has been removed to the map", currentHash);
+        log.info("Node with hostname ({}) has been removed from the map", currentHash);
 
     }
 

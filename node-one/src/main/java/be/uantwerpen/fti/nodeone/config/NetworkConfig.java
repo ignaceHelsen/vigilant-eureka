@@ -1,6 +1,8 @@
 package be.uantwerpen.fti.nodeone.config;
 
 import be.uantwerpen.fti.nodeone.ExampleServletContextListener;
+import be.uantwerpen.fti.nodeone.domain.NodeStructure;
+import be.uantwerpen.fti.nodeone.service.HashCalculator;
 import be.uantwerpen.fti.nodeone.service.NetworkService;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +26,8 @@ public class NetworkConfig {
     private int multicastPort;
     private String multicastGroupIp;
     private int socketPort;
+    private int updateNextSocketPort;
+    private int updatePreviousSocketPort;
 
     @Bean
     ServletListenerRegistrationBean<ServletContextListener> servletListener(NetworkService networkService) {
@@ -31,5 +35,10 @@ public class NetworkConfig {
                 = new ServletListenerRegistrationBean<>();
         srb.setListener(new ExampleServletContextListener(networkService));
         return srb;
+    }
+
+    @Bean
+    public NodeStructure nodeStructure(HashCalculator hashCalculator) {
+        return new NodeStructure(0, hashCalculator.calculateHash(hostName), 0);
     }
 }

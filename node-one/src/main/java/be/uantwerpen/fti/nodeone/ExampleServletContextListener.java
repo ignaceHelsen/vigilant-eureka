@@ -1,5 +1,6 @@
 package be.uantwerpen.fti.nodeone;
 
+import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.service.NetworkService;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +21,7 @@ public class ExampleServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent event) {
         // Triggers when context initializes
-        System.out.println("qzefqbfSF");
+
+
     }
 }

@@ -26,9 +26,4 @@ public class RestConfig {
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
     }
-
-    @Bean
-    public NodeStructure nodeStructure() {
-        return new NodeStructure(0, 0, 0);
-    }
 }
