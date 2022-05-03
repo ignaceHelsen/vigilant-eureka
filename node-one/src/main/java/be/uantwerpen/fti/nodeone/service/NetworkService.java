@@ -60,24 +60,23 @@ public class NetworkService {
         log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d (0 means the current node is its own next node)", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
         // first go to naming server to get ip of previous and next node
         try {
-            ResponseEntity<NextAndPreviousNode> ipNodes = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%d",
-                    namingServerConfig.getAddress(), namingServerConfig.getPort(), nodeStructure.getCurrentHash()), NextAndPreviousNode.class);
+            NextAndPreviousNode ipNodes = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
 
-            if (ipNodes.getBody() == null) log.warn("Node could not be found");
+            if (ipNodes == null) log.warn("Node could not be found");
             else {
                 // this is the important part: we need to update our own structure with the new info
-                nodeStructure.setNextNode(ipNodes.getBody().getIdNext());
-                nodeStructure.setPreviousNode(ipNodes.getBody().getIdPrevious());
+                nodeStructure.setNextNode(ipNodes.getIdNext());
+                nodeStructure.setPreviousNode(ipNodes.getIdPrevious());
 
                 // now send to our peers
-                if (ipNodes.getBody().getIdNext() != nodeStructure.getCurrentHash()) {
+                if (ipNodes.getIdNext() != nodeStructure.getCurrentHash()) {
                     // send notification to next
-                    updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort(), nodeStructure.getNextNode());
+                    updateNode(ipNodes.getIpNext(), networkConfig.getUpdateNextSocketPort(), nodeStructure.getNextNode());
                 }
 
-                if (ipNodes.getBody().getIdPrevious() != nodeStructure.getCurrentHash()) {
+                if (ipNodes.getIdPrevious() != nodeStructure.getCurrentHash()) {
                     // send notification to previous
-                    updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort(), nodeStructure.getPreviousNode());
+                    updateNode(ipNodes.getIpPrevious(), networkConfig.getUpdatePreviousSocketPort(), nodeStructure.getPreviousNode());
                 }
             }
         } catch(ResourceAccessException e) {
