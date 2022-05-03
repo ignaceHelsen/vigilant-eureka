@@ -6,9 +6,10 @@ import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -23,7 +24,7 @@ import java.net.*;
 @Service
 @Slf4j
 @EnableScheduling
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class NetworkService {
     private final NetworkConfig networkConfig;
     private final RestService restService;
@@ -53,11 +54,11 @@ public class NetworkService {
         }
     }
 
-    @Scheduled(fixedRate = 10 * 1000) // start after 30s after startup and send every 30s.
+    @Scheduled(fixedRate = 30 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
     public void BroadcastPresence() {
         log.info(String.format("Current previous node: %d\t Current next node: %d", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
         // first go to naming server to get ip of previous and next node
-        ResponseEntity<NextAndPreviousNode> ipNodes = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevios/%d",
+        ResponseEntity<NextAndPreviousNode> ipNodes = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%d",
                 namingServerConfig.getAddress(), namingServerConfig.getPort(), nodeStructure.getCurrentHash()), NextAndPreviousNode.class);
 
         if (ipNodes.getBody() == null) log.warn("Node could not be found");
