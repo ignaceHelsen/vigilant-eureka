@@ -1,6 +1,7 @@
 package be.uantwerpen.fti.namingserver.service;
 
 import be.uantwerpen.fti.namingserver.config.MapConfig;
+import be.uantwerpen.fti.namingserver.controller.dto.NextAndPreviousDto;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -63,9 +64,13 @@ public class HashService {
 
     public void removeNode(String hostname) {
         int hash = calculateHash(hostname);
-        nodes.remove(hash);
+        removeNode(hash);
+    }
+
+    public void removeNode(int currentHash) {
+        nodes.remove(currentHash);
         updateMap();
-        log.info("Node with hostname ({}) has been removed to the map", hostname);
+        log.info("Node with hostname ({}) has been removed from the map", currentHash);
 
     }
 
@@ -110,6 +115,28 @@ public class HashService {
         } catch (IOException e) {
             log.error("Unable to create or find nodes.json.");
         }
+    }
+
+    public String getAddressWithKey(int key) {
+        return nodes.get(key);
+    }
+
+    public int getNext(int currentHash) {
+        Integer hash = nodes.higherKey(currentHash);
+        if (hash == null) return currentHash;
+        return hash;
+    }
+
+    public int getPrevious(int currentHash) {
+        Integer hash = nodes.lowerKey(currentHash);
+        if (hash == null) return currentHash;
+        return hash;
+    }
+
+    public NextAndPreviousDto getNextAndPrevious(int currentHash) {
+        int idNext = getNext(currentHash);
+        int idPrevious = getPrevious(currentHash);
+        return new NextAndPreviousDto(idNext, getAddressWithKey(idNext), idPrevious, getAddressWithKey(idPrevious));
     }
 
     public int mapSize() {

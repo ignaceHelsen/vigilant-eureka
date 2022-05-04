@@ -8,5 +8,5 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class RemoveNodeRequest {
-    String hostname;
+    int currentHash;
 }
