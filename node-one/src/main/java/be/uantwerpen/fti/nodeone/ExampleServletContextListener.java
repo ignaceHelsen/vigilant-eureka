@@ -26,12 +26,13 @@ public class ExampleServletContextListener
 
     @Override
     public void contextInitialized(ServletContextEvent event) {
-        networkService.registerNode();
-
+        tcpService.listenUnicastResponse();
         multicastListener.listenForMulticast();
 
         tcpService.listenForUpdateNext();
         tcpService.listenForUpdatePrevious();
-        tcpService.listenUnicastResponse();
+
+        networkService.registerNode();
+
     }
 }

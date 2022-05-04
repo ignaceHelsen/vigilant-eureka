@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 @Service
 @AllArgsConstructor
 public class MulticastListener {
-    private final HashCalculator hashService;
+    private final HashCalculator hashCalculator;
     private final NetworkConfig networkConfig;
     private final MulticastSocket socket;
     private NodeStructure nodeStructure;
@@ -31,9 +31,9 @@ public class MulticastListener {
                 // ignore if same node
                 if (nodeName.equals(networkConfig.getHostName())) continue;
 
-                int nodeHash = hashService.calculateHash(nodeName);
+                int nodeHash = hashCalculator.calculateHash(nodeName);
 
-                int ownHash = hashService.calculateHash(networkConfig.getHostName());
+                int ownHash = hashCalculator.calculateHash(networkConfig.getHostName());
                 nodeStructure.setCurrentHash(ownHash);
 
                 if (nodeHash < ownHash) nodeStructure.setPreviousNode(nodeHash);

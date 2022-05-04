@@ -14,16 +14,16 @@ import javax.servlet.ServletContextListener;
 @EnableAsync
 @SpringBootApplication
 public class NodeOneApplication {
-	public static void main(String[] args) {
-		SpringApplication.run(NodeOneApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(NodeOneApplication.class, args);
+    }
 
-	@Bean
-	public ServletListenerRegistrationBean<ServletContextListener> servletListener(NetworkService networkService, TcpListener tcpListener,
-																				   MulticastListener multicastListener) {
-		ServletListenerRegistrationBean<ServletContextListener> srb = new ServletListenerRegistrationBean<>();
-		srb.setListener(new ExampleServletContextListener(networkService, tcpListener, multicastListener));
-		return srb;
-	}
+    @Bean
+    public ServletListenerRegistrationBean<ServletContextListener> servletListener(NetworkService networkService, TcpListener tcpListener,
+                                                                                   MulticastListener multicastListener) {
+        ServletListenerRegistrationBean<ServletContextListener> srb = new ServletListenerRegistrationBean<>();
+        srb.setListener(new ExampleServletContextListener(networkService, tcpListener, multicastListener));
+        return srb;
+    }
 
 }

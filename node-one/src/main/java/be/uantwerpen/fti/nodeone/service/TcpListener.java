@@ -2,6 +2,7 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
+import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -11,29 +12,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 @Service
+@AllArgsConstructor
 public class TcpListener {
-    private final HashCalculator hashService;
+    private final HashCalculator hashCalculator;
     private final NodeStructure nodeStructure;
     private final NetworkConfig networkConfig;
-    private final int unicastResponsePort;
-    private final int unicastNextNodePort;
-    private final int unicastPreviousNodePort;
-
-
-    public TcpListener(HashCalculator hashService, NodeStructure nodeStructure, NetworkConfig networkConfig) {
-        this.hashService = hashService;
-        this.nodeStructure = nodeStructure;
-        this.networkConfig = networkConfig;
-
-        unicastResponsePort = networkConfig.getSocketPort();
-        // listenForUpdateNext runs on port 5000, we just add one so we don't get an PortAlreadyInUse error.
-        unicastNextNodePort = networkConfig.getSocketPort() + 1;
-        unicastPreviousNodePort = networkConfig.getSocketPort() + 2;
-    }
 
     @Async
     public void listenUnicastResponse() {
-        try (ServerSocket serverSocket = new ServerSocket(unicastResponsePort)) {
+        try (ServerSocket serverSocket = new ServerSocket(networkConfig.getSocketPort())) {
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 new Thread(() -> {
@@ -41,8 +28,8 @@ public class TcpListener {
                         DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
                         int mapSize = inputStream.readInt();
                         if (mapSize == 1) {
-                            nodeStructure.setPreviousNode(hashService.calculateHash(networkConfig.getHostName()));
-                            nodeStructure.setNextNode(hashService.calculateHash(networkConfig.getHostName()));
+                            nodeStructure.setPreviousNode(hashCalculator.calculateHash(networkConfig.getHostName()));
+                            nodeStructure.setNextNode(hashCalculator.calculateHash(networkConfig.getHostName()));
                         }
                         inputStream.close();
                         clientSocket.close();
@@ -60,14 +47,14 @@ public class TcpListener {
 
     @Async
     public void listenForUpdateNext() {
-        try (ServerSocket serverSocket = new ServerSocket(unicastNextNodePort)) {
+        try (ServerSocket serverSocket = new ServerSocket(networkConfig.getUpdateNextSocketPort())) {
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 new Thread(() -> {
                     try {
                         DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
-                        int newPreviousNode = inputStream.readInt();
-                        nodeStructure.setPreviousNode(newPreviousNode);
+                        int newNextNode = inputStream.readInt();
+                        nodeStructure.setNextNode(newNextNode);
                         inputStream.close();
                         clientSocket.close();
                     } catch (IOException e) {
@@ -83,7 +70,7 @@ public class TcpListener {
 
     @Async
     public void listenForUpdatePrevious() {
-        try (ServerSocket serverSocket = new ServerSocket(unicastPreviousNodePort)) {
+        try (ServerSocket serverSocket = new ServerSocket(networkConfig.getUpdatePreviousSocketPort())) {
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 new Thread(() -> {

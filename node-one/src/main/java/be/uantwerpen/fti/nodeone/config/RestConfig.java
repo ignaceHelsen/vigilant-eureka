@@ -1,6 +1,5 @@
 package be.uantwerpen.fti.nodeone.config;
 
-import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;

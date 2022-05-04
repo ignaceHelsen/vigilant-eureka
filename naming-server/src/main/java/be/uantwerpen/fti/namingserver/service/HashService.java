@@ -117,19 +117,23 @@ public class HashService {
         }
     }
 
-    public String getAddressWithKey(int key){
+    public String getAddressWithKey(int key) {
         return nodes.get(key);
     }
 
-    public int getNext(int currentHash){
-        return nodes.higherKey(currentHash);
+    public int getNext(int currentHash) {
+        Integer hash = nodes.higherKey(currentHash);
+        if (hash == null) return currentHash;
+        return hash;
     }
 
     public int getPrevious(int currentHash) {
-        return nodes.lowerKey(currentHash);
+        Integer hash = nodes.lowerKey(currentHash);
+        if (hash == null) return currentHash;
+        return hash;
     }
 
-    public NextAndPreviousDto getNextAndPrevious(int currentHash){
+    public NextAndPreviousDto getNextAndPrevious(int currentHash) {
         int idNext = getNext(currentHash);
         int idPrevious = getPrevious(currentHash);
         return new NextAndPreviousDto(idNext, getAddressWithKey(idNext), idPrevious, getAddressWithKey(idPrevious));

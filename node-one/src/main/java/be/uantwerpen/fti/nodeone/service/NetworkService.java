@@ -6,7 +6,6 @@ import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +15,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.DataOutputStream;
@@ -25,7 +25,7 @@ import java.net.*;
 @Service
 @Slf4j
 @EnableScheduling
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class NetworkService {
     private final NetworkConfig networkConfig;
     private final RestService restService;
@@ -57,27 +57,40 @@ public class NetworkService {
 
     @Scheduled(fixedRate = 30 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
     public void BroadcastPresence() {
-        log.info(String.format("Current previous node: %d\t Current next node: %d", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
+        log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d (0 means the current node is its own next node)", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
         // first go to naming server to get ip of previous and next node
-        ResponseEntity<NextAndPreviousNode> ipNodes = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%d",
-                namingServerConfig.getAddress(), namingServerConfig.getPort(), nodeStructure.getCurrentHash()), NextAndPreviousNode.class);
+        try {
+            NextAndPreviousNode ipNodes = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
 
-        if (ipNodes.getBody() == null) log.warn("Node could not be found");
-        else {
-            // send notification to next
-            updateNode(ipNodes.getBody().getIpNext(), networkConfig.getUpdateNextSocketPort());
+            if (ipNodes == null) log.warn("Node could not be found");
+            else {
+                // this is the important part: we need to update our own structure with the new info
+                nodeStructure.setNextNode(ipNodes.getIdNext());
+                nodeStructure.setPreviousNode(ipNodes.getIdPrevious());
 
-            // send notification to previous
-            updateNode(ipNodes.getBody().getIpPrevious(), networkConfig.getUpdatePreviousSocketPort());
+                // now send to our peers
+                if (ipNodes.getIdNext() != nodeStructure.getCurrentHash()) {
+                    // send notification to next
+                    updateNode(ipNodes.getIpNext(), networkConfig.getUpdateNextSocketPort(), nodeStructure.getNextNode());
+                }
+
+                if (ipNodes.getIdPrevious() != nodeStructure.getCurrentHash()) {
+                    // send notification to previous
+                    updateNode(ipNodes.getIpPrevious(), networkConfig.getUpdatePreviousSocketPort(), nodeStructure.getPreviousNode());
+                }
+            }
+        } catch(ResourceAccessException e) {
+            log.error("Connection to {}:{} timed out.", namingServerConfig.getAddress(), namingServerConfig.getPort());
         }
     }
 
-    private void updateNode(String ip, int Port) {
-        try (Socket socket = new Socket(ip, Port)) {
+    private void updateNode(String ip, int port, int hash) {
+        try (Socket socket = new Socket(ip, port)) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(nodeStructure.getCurrentHash());
             outputStream.close();
         } catch (IOException e) {
+            nodeFailure(hash);
             e.printStackTrace();
         }
     }
@@ -91,11 +104,11 @@ public class NetworkService {
         log.info("Node request to shut down, next and previous node will be updated.");
         //Request ip with id next node namingservice (REST)
         String NextIp = restService.requestNodeIpWithHashValue(nextNode);
-        //Send id previous to next (TCP)
+        //Send id previous to next node (TCP)
         sendUpdatePrevious(NextIp, nextNode, previousNode);
         //Request ip with id previous node namingservice (REST)
         String PreviousIp = restService.requestNodeIpWithHashValue(previousNode);
-        //Send id next to previous (TCP)
+        //Send id next to previous node (TCP)
         sendUpdateNext(PreviousIp, previousNode, nextNode);
         restService.removeNode(new RemoveNodeRequest(currentHash));
     }
@@ -110,7 +123,7 @@ public class NetworkService {
     }
 
     public void sendUpdateNext(String ipAddress, int idNext, int newNextNode) {
-        try (Socket socket = new Socket(ipAddress, 5000)) {
+        try (Socket socket = new Socket(ipAddress, networkConfig.getSocketPort())) {
             log.info("Updating the 'next node' parameter of the previous node.");
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(newNextNode);
@@ -123,14 +136,14 @@ public class NetworkService {
     }
 
     public void sendUpdatePrevious(String ipAddress, int idPrevious, int newPreviousNode) {
-        try (Socket socket = new Socket(ipAddress, 5000)) {
+        try (Socket socket = new Socket(ipAddress, networkConfig.getSocketPort())) {
             log.info("Updating the 'previous node' parameter of the next node.");
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(newPreviousNode);
             outputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
             log.warn("'Previous node' parameter of next node failed to update.");
+            e.printStackTrace();
             nodeFailure(idPrevious);
         }
     }
