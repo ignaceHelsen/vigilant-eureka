@@ -1,40 +1,39 @@
 package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
-import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.ReplicationStructure;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Random;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 @Slf4j
+@AllArgsConstructor
 public class ReplicationService {
     private final ReplicationStructure replicationStructure; // TODO persistence?
-    private final NetworkConfig networkConfig;
     private final NamingServerConfig namingServerConfig;
     private final RestTemplate restTemplate;
 
-    public ReplicationService(NetworkConfig networkConfig, NamingServerConfig namingServerConfig, RestTemplate restTemplate) {
-        this.networkConfig = networkConfig;
-        this.namingServerConfig = namingServerConfig;
-        this.restTemplate = restTemplate;
-
-        // TODO load json into replicationStructure
-        replicationStructure = new ReplicationStructure();
-    }
-
     public void startReplication() {
+        replicationStructure.initialize();
+
         // check only for local files
-        replicationStructure.getFiles().forEach(file -> {
+        replicationStructure.getLocalFiles().forEach(file -> {
             // replicate every file which has not yet been replicated
             if (!file.isReplicated()) {
                 try {
@@ -95,61 +94,23 @@ public class ReplicationService {
 
 
     private void replicate(String path, String destination) throws IOException {
-        try (Socket socket = new Socket(destination, networkConfig.getReplicationSocketPort())) { // port 5003
-            // Read file
-            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-            int bytes;
-            File file = new File(path);
-            FileInputStream fileInputStream = new FileInputStream(file);
-            // send file size
-            dataOutputStream.writeLong(file.length());
-            // break file into chunks
-            byte[] buffer = new byte[1024];
-            while ((bytes = fileInputStream.read(buffer)) != -1) {
-                dataOutputStream.write(buffer, 0, bytes);
-                dataOutputStream.flush();
-            }
-            fileInputStream.close();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            dataOutputStream.close();
-        }
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("files", getFile(path));
+        // body.add("files", getFile());
+        //body.add("files", getFile());
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+        String serverUrl = String.format("http://%s:%s/api/replication/replicate/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.postForEntity(serverUrl, requestEntity, String.class);
+        log.info("Response code: " + response.getStatusCode());
     }
 
-    /**
-     * Listens for incoming replications
-     */
-    @Async
-    public void startReplicationListener() {
-        try (ServerSocket serverSocket = new ServerSocket(networkConfig.getReplicationSocketPort())) {
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                new Thread(() -> {
-                    try {
-                        DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
-                        int bytes;
-                        // store to resources/storage/replica
-                        FileOutputStream fileOutputStream = new FileOutputStream(String.format("resources/storage/replica/newfile_%d", new Random().nextInt()));
-
-                        long size = inputStream.readLong();     // read file size
-                        byte[] buffer = new byte[1024];
-                        while (size > 0 && (bytes = inputStream.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
-                            fileOutputStream.write(buffer, 0, bytes);
-                            size -= bytes;      // read upto file size
-                        }
-                        fileOutputStream.close();
-
-
-                        inputStream.close();
-                        clientSocket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-
-                    }
-                }).start();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private Resource getFile(String path) {
+        Path file = Paths.get(path);
+        return new FileSystemResource(file.toFile());
     }
 }

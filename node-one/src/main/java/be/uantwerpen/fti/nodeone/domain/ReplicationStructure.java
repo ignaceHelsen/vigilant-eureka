@@ -3,7 +3,9 @@ package be.uantwerpen.fti.nodeone.domain;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.Set;
@@ -11,13 +13,16 @@ import java.util.TreeSet;
 
 @Getter
 @Setter
-@AllArgsConstructor
+@RequiredArgsConstructor
+@Component
 public class ReplicationStructure {
-    private Set<FileStructure> files;
-    private ReplicationConfig replicationConfig;
+    private Set<FileStructure> localFiles;
+    private Set<FileStructure> replicatedFiles;
+    private final ReplicationConfig replicationConfig;
 
-    public ReplicationStructure() {
-        files = new TreeSet<>();
+    public void initialize() {
+        localFiles = new TreeSet<>();
+        replicatedFiles = new TreeSet<>();
 
         // TODO load json
         File dir = new File(replicationConfig.getLocal());
@@ -25,7 +30,16 @@ public class ReplicationStructure {
         if (directoryListing != null) {
             for (File child : directoryListing) {
                 // add to files
-                files.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
+                localFiles.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
+            }
+        }
+
+        dir = new File(replicationConfig.getReplica());
+        directoryListing = dir.listFiles();
+        if (directoryListing != null) {
+            for (File child : directoryListing) {
+                // add to files
+                replicatedFiles.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
             }
         }
     }
@@ -33,7 +47,7 @@ public class ReplicationStructure {
     @Setter
     @Getter
     @AllArgsConstructor
-    public static class FileStructure implements Comparable<FileStructure> {
+    public class FileStructure implements Comparable<FileStructure> {
         private boolean replicated;
         private String path;
 
