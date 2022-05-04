@@ -3,21 +3,17 @@ package be.uantwerpen.fti.nodeone.service;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 @Service
 @AllArgsConstructor
 public class MulticastListener {
-    private final HashService hashService;
+    private final HashCalculator hashCalculator;
     private final NetworkConfig networkConfig;
     private final MulticastSocket socket;
     private NodeStructure nodeStructure;
@@ -35,11 +31,9 @@ public class MulticastListener {
                 // ignore if same node
                 if (nodeName.equals(networkConfig.getHostName())) continue;
 
-                // TODO: call naming server for the hash
-                int nodeHash = hashService.calculateHash(nodeName);
+                int nodeHash = hashCalculator.calculateHash(nodeName);
 
-                // TODO: call naming server for the hash
-                int ownHash = hashService.calculateHash(networkConfig.getHostName());
+                int ownHash = hashCalculator.calculateHash(networkConfig.getHostName());
                 nodeStructure.setCurrentHash(ownHash);
 
                 if (nodeHash < ownHash) nodeStructure.setPreviousNode(nodeHash);
