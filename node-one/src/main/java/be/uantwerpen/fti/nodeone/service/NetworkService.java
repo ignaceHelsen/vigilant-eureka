@@ -2,25 +2,23 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
-import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.Socket;
 
 @Service
 @Slf4j
@@ -30,7 +28,6 @@ public class NetworkService {
     private final NetworkConfig networkConfig;
     private final RestService restService;
     private final NodeStructure nodeStructure;
-    private final RestTemplate restTemplate;
     private final NamingServerConfig namingServerConfig;
 
     @Async

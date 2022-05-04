@@ -23,6 +23,7 @@ public class NetworkConfig {
     private int socketPort;
     private int updateNextSocketPort;
     private int updatePreviousSocketPort;
+    private int replicationSocketPort;
 
     @Bean
     public NodeStructure nodeStructure(HashCalculator hashCalculator) {
