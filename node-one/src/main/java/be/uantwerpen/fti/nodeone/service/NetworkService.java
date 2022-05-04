@@ -61,10 +61,6 @@ public class NetworkService {
 
             if (ipNodes == null) log.warn("Node could not be found");
             else {
-                // this is the important part: we need to update our own structure with the new info
-                nodeStructure.setNextNode(ipNodes.getIdNext());
-                nodeStructure.setPreviousNode(ipNodes.getIdPrevious());
-
                 // now send to our peers
                 if (ipNodes.getIdNext() != nodeStructure.getCurrentHash()) {
                     // send notification to next

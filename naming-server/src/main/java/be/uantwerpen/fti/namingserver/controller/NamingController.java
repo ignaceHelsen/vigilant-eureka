@@ -53,6 +53,6 @@ public class NamingController {
     public ResponseEntity<String> getReplicationDestination(@PathVariable String filename) {
         log.info("Request received for file replication. File: {}", filename);
         // TODO ReplicationService
-        return ResponseEntity.ok("test");
+        return ResponseEntity.ok("host3.group5.6dist");
     }
 }

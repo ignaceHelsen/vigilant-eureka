@@ -3,6 +3,7 @@ package be.uantwerpen.fti.nodeone.service;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 @Service
+@Slf4j
 @AllArgsConstructor
 public class TcpListener {
     private final HashCalculator hashCalculator;
@@ -33,9 +35,9 @@ public class TcpListener {
                         }
                         inputStream.close();
                         clientSocket.close();
-                    } catch (IOException e) {
+                    } catch (Exception e) {
+                        log.error("Error while receiving unicast from naming server");
                         e.printStackTrace();
-
                     }
                 }).start();
             }

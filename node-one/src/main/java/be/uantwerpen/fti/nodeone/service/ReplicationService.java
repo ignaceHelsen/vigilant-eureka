@@ -10,6 +10,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -23,31 +25,43 @@ import java.nio.file.Paths;
 
 @Service
 @Slf4j
+@EnableScheduling
 @AllArgsConstructor
 public class ReplicationService {
     private final ReplicationStructure replicationStructure; // TODO persistence?
     private final NamingServerConfig namingServerConfig;
     private final RestTemplate restTemplate;
 
-    public void startReplication() {
+    public void initializeReplication() {
         replicationStructure.initialize();
+    }
 
+    @Scheduled(initialDelay = 10 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
+    public void startReplication() {
         // check only for local files
         replicationStructure.getLocalFiles().forEach(file -> {
             // replicate every file which has not yet been replicated
             if (!file.isReplicated()) {
                 try {
                     String destination = getDestination(file.getPath());
-                    replicate(file.getPath(), destination);
-                } catch (IOException e) {
-                    log.info("Replicating file {}", file.getPath());
+
+                    try {
+                        replicate(file.getPath(), destination);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (RestClientException e) {
+                        log.info("Could not connect to naming server at {}", destination);
+                        e.printStackTrace();
+                    }
+                } catch (Exception e) {
+                    log.error("Unable to connect to naming server");
                     e.printStackTrace();
-                } catch (RestClientException e) {
-                    log.info("Could not connect to naming server at {}", namingServerConfig.getAddress());
                 }
             }
         });
     }
+
+    // TODO when a file has been added, replicate it immediately
 
     /**
      * Check if all needed directories for replication are present.
@@ -86,14 +100,17 @@ public class ReplicationService {
     }
 
     private String getDestination(String path) throws RestClientException {
+        String filename = Paths.get(path).getFileName().toString();
         // ask naming server where we should replicate the file to
         ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/replicationDestination/%s",
-                namingServerConfig.getAddress(), namingServerConfig.getPort(), path), String.class);
+                namingServerConfig.getAddress(), namingServerConfig.getPort(), filename), String.class);
         return response.getBody();
     }
 
 
     private void replicate(String path, String destination) throws IOException {
+        log.info("Replicating file {}", path);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
@@ -106,7 +123,6 @@ public class ReplicationService {
         String serverUrl = String.format("http://%s:%s/api/replication/replicate/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> response = restTemplate.postForEntity(serverUrl, requestEntity, String.class);
-        log.info("Response code: " + response.getStatusCode());
     }
 
     private Resource getFile(String path) {

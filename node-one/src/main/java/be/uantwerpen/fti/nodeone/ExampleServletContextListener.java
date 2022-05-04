@@ -33,7 +33,7 @@ public class ExampleServletContextListener
 
         networkService.registerNode();
 
+        replicationService.initializeReplication();
         replicationService.precheck(); // check if all needed directories for replication are present.
-        replicationService.startReplication();
     }
 }

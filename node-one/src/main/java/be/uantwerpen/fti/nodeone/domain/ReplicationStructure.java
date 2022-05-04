@@ -5,16 +5,20 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
 @RequiredArgsConstructor
 @Component
+@Slf4j
 public class ReplicationStructure {
     private Set<FileStructure> localFiles;
     private Set<FileStructure> replicatedFiles;
@@ -25,10 +29,12 @@ public class ReplicationStructure {
         replicatedFiles = new TreeSet<>();
 
         // TODO load json
+        log.info("Loading replication structure");
         File dir = new File(replicationConfig.getLocal());
         File[] directoryListing = dir.listFiles();
         if (directoryListing != null) {
-            for (File child : directoryListing) {
+            // ignore gitkeeps
+            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().contains("gitkeep"))).collect(Collectors.toList())) {
                 // add to files
                 localFiles.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
             }
@@ -37,7 +43,8 @@ public class ReplicationStructure {
         dir = new File(replicationConfig.getReplica());
         directoryListing = dir.listFiles();
         if (directoryListing != null) {
-            for (File child : directoryListing) {
+            // ignore gitkeeps
+            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().contains("gitkeep"))).collect(Collectors.toList())) {
                 // add to files
                 replicatedFiles.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
             }
