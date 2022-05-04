@@ -50,7 +50,7 @@ public class ReplicationService {
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (RestClientException e) {
-                        log.info("Could not connect to naming server at {}", destination);
+                        log.info("Could not connect to server at {}", destination);
                         e.printStackTrace();
                     }
                 } catch (Exception e) {
@@ -115,14 +115,15 @@ public class ReplicationService {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("files", getFile(path));
-        // body.add("files", getFile());
-        //body.add("files", getFile());
+        body.add("file", getFile(path));
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
         String serverUrl = String.format("http://%s:%s/api/replication/replicate/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity(serverUrl, requestEntity, String.class);
+        ResponseEntity<Boolean> response = restTemplate.postForEntity(serverUrl, requestEntity, Boolean.class);
+
+        if (Boolean.TRUE.equals(response.getBody())) log.info("Succesfully replicated file {}", path);
+        else log.warn("Failed replicating file {}", path);
     }
 
     private Resource getFile(String path) {

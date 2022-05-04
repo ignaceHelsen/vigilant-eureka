@@ -51,7 +51,7 @@ public class NamingController {
 
     @GetMapping("/replicationDestination/{filename}")
     public ResponseEntity<String> getReplicationDestination(@PathVariable String filename) {
-        log.info("Request received for file replication. File: {}", filename);
+        log.info("Request received for file replication: {}", filename);
         // TODO ReplicationService
         return ResponseEntity.ok("host3.group5.6dist");
     }
