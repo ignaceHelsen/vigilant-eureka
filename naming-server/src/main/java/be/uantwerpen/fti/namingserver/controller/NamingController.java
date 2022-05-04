@@ -60,4 +60,15 @@ public class NamingController {
         NextAndPreviousDto nextAndPrevious = hashService.getNextAndPrevious(hash);
         return ResponseEntity.ok(nextAndPrevious);
     }
+
+    @GetMapping("/getPreviousNode/{hashValue}")
+    public ResponseEntity<Integer> getPreviousNode(@PathVariable int hashValue) {
+        log.info("Hash value of the previous node of node {} has been requested.", hashValue);
+        int previousNode = hashService.getPrevious(hashValue);
+        if (previousNode == 0) {
+            log.info("No previous node found.");
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(previousNode);
+    }
 }
