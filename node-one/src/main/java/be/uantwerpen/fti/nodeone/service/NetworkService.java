@@ -72,8 +72,8 @@ public class NetworkService {
         }
     }
 
-    private void updateNode(String ipNext, int updateNextSocketPort) {
-        try (Socket socket = new Socket(ipNext, updateNextSocketPort)) {
+    private void updateNode(String ip, int Port) {
+        try (Socket socket = new Socket(ip, Port)) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeInt(nodeStructure.getCurrentHash());
             outputStream.close();
