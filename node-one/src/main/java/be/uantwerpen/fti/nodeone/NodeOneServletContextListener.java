@@ -10,7 +10,7 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 @RequiredArgsConstructor
-public class ExampleServletContextListener
+public class NodeOneServletContextListener
         implements ServletContextListener {
 
     private final NetworkService networkService;
@@ -36,3 +36,4 @@ public class ExampleServletContextListener
 
     }
 }
+

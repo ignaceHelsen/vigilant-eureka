@@ -22,7 +22,7 @@ public class NodeOneApplication {
     public ServletListenerRegistrationBean<ServletContextListener> servletListener(NetworkService networkService, TcpListener tcpListener,
                                                                                    MulticastListener multicastListener) {
         ServletListenerRegistrationBean<ServletContextListener> srb = new ServletListenerRegistrationBean<>();
-        srb.setListener(new ExampleServletContextListener(networkService, tcpListener, multicastListener));
+        srb.setListener(new NodeOneServletContextListener(networkService, tcpListener, multicastListener));
         return srb;
     }
 
