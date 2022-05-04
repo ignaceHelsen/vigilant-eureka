@@ -13,11 +13,11 @@ import java.util.TreeSet;
 @Setter
 @AllArgsConstructor
 public class ReplicationStructure {
-    Set<FileStructure> files;
-    ReplicationConfig replicationConfig;
+    private Set<FileStructure> files;
+    private ReplicationConfig replicationConfig;
 
     public ReplicationStructure() {
-        this.files = new TreeSet<>();
+        files = new TreeSet<>();
 
         // TODO load json
         File dir = new File(replicationConfig.getLocal());
@@ -25,7 +25,7 @@ public class ReplicationStructure {
         if (directoryListing != null) {
             for (File child : directoryListing) {
                 // add to files
-                files.add(new FileStructure(false, child.getPath())); // todo decide if file should be replicated
+                files.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
             }
         }
     }
@@ -36,7 +36,6 @@ public class ReplicationStructure {
     public static class FileStructure implements Comparable<FileStructure> {
         private boolean replicated;
         private String path;
-
 
         @Override
         public int compareTo(FileStructure o) {
