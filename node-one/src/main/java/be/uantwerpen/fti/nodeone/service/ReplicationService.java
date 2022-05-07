@@ -1,7 +1,7 @@
 package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
-import be.uantwerpen.fti.nodeone.domain.ReplicationStructure;
+import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -28,7 +28,7 @@ import java.nio.file.Paths;
 @EnableScheduling
 @AllArgsConstructor
 public class ReplicationService {
-    private final ReplicationStructure replicationStructure; // TODO persistence?
+    private final ReplicationComponent replicationStructure; // TODO persistence?
     private final NamingServerConfig namingServerConfig;
     private final RestTemplate restTemplate;
 
