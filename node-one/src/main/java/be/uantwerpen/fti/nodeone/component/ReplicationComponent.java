@@ -34,7 +34,7 @@ public class ReplicationComponent {
         File[] directoryListing = dir.listFiles();
         if (directoryListing != null) {
             // ignore gitkeeps
-            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().contains("gitkeep"))).collect(Collectors.toList())) {
+            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
                 // add to files
                 localFiles.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
             }
@@ -44,7 +44,7 @@ public class ReplicationComponent {
         directoryListing = dir.listFiles();
         if (directoryListing != null) {
             // ignore gitkeeps
-            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().contains("gitkeep"))).collect(Collectors.toList())) {
+            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
                 // add to files
                 replicatedFiles.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
             }
