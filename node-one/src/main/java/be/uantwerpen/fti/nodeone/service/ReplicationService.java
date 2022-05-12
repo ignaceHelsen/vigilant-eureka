@@ -3,6 +3,7 @@ package be.uantwerpen.fti.nodeone.service;
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
+import be.uantwerpen.fti.nodeone.domain.Action;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -70,6 +71,7 @@ public class ReplicationService {
     }
 
     // TODO when a file has been added, replicate it immediately
+
 
     /**
      * Check if all needed directories for replication are present.
@@ -141,12 +143,18 @@ public class ReplicationService {
         return new FileSystemResource(file.toFile());
     }
 
-    public boolean storeFile(MultipartFile file) {
+    public boolean storeFile(MultipartFile file, Action action) {
         byte[] bytes;
         try {
             bytes = file.getBytes();
-            String path = String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename());
-            log.info("Replicating to {}", path);
+            String path;
+            if (action == Action.LOCAL) {
+                path = String.format("%s/%s", replicationConfig.getLocal(), file.getOriginalFilename());
+                log.info("Saving to {}", path);
+            } else {
+                path = String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename());
+                log.info("Replicating to {}", path);
+            }
 
             File outputFile = new File(path);
             try (FileOutputStream fos = new FileOutputStream(outputFile)) {
