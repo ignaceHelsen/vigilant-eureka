@@ -26,5 +26,4 @@ public class NodeOneApplication {
         srb.setListener(new ExampleServletContextListener(networkService, tcpListener, multicastListener, replicationService));
         return srb;
     }
-
 }

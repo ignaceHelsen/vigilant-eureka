@@ -1,37 +1,29 @@
 package be.uantwerpen.fti.nodeone.controller;
 
-import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
+import be.uantwerpen.fti.nodeone.service.ReplicationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
 
 @RestController
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/api/replication")
 public class NodeController {
-    private final ReplicationConfig replicationConfig;
+    private final ReplicationService replicationService;
 
     @PostMapping(path = "/replicate")
-    public ResponseEntity<Boolean> processFile(@RequestParam("file") MultipartFile file) {
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
+    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file) {
+        boolean success = replicationService.storeFile(file);
 
-            log.info("Replicating to {}", String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename()));
-            try (FileOutputStream fos = new FileOutputStream(String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename()))) {
-                fos.write(bytes);
-            }
-
+        if (success)
             return ResponseEntity.ok(true);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().build();
-        }
+
+        return ResponseEntity.badRequest().build();
     }
 }

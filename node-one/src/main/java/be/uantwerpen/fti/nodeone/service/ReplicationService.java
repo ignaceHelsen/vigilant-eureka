@@ -2,6 +2,7 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
+import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -17,8 +18,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +34,8 @@ public class ReplicationService {
     private final ReplicationComponent replicationStructure; // TODO persistence?
     private final NamingServerConfig namingServerConfig;
     private final RestTemplate restTemplate;
+    private final HashCalculator hashCalculator;
+    private final ReplicationConfig replicationConfig;
 
     public void initializeReplication() {
         replicationStructure.initialize();
@@ -38,6 +43,8 @@ public class ReplicationService {
 
     @Scheduled(initialDelay = 10 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
     public void startReplication() {
+        replicationStructure.lookForNewFiles();
+
         // check only for local files
         replicationStructure.getLocalFiles().forEach(file -> {
             // replicate every file which has not yet been replicated
@@ -47,6 +54,7 @@ public class ReplicationService {
 
                     try {
                         replicate(file.getPath(), destination);
+                        file.setReplicated(true);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (RestClientException e) {
@@ -101,9 +109,9 @@ public class ReplicationService {
 
     private String getDestination(String path) throws RestClientException {
         String filename = Paths.get(path).getFileName().toString();
-        // ask naming server where we should replicate the file to
-        ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/replicationDestination/%s",
-                namingServerConfig.getAddress(), namingServerConfig.getPort(), filename), String.class);
+        // Ask naming server where we should replicate the file to
+        ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/replicationDestination/%d",
+                namingServerConfig.getAddress(), namingServerConfig.getPort(), hashCalculator.calculateHash(filename)), String.class);
         return response.getBody();
     }
 
@@ -115,6 +123,8 @@ public class ReplicationService {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+
+        if (path == null) log.warn("Path of file has returned null");
         body.add("file", getFile(path));
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
@@ -129,5 +139,25 @@ public class ReplicationService {
     private Resource getFile(String path) {
         Path file = Paths.get(path);
         return new FileSystemResource(file.toFile());
+    }
+
+    public boolean storeFile(MultipartFile file) {
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+            String path = String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename());
+            log.info("Replicating to {}", path);
+
+            File outputFile = new File(path);
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+                fos.write(bytes);
+            }
+
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 }

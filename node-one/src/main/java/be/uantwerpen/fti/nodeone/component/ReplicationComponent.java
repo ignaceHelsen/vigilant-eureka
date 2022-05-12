@@ -28,6 +28,10 @@ public class ReplicationComponent {
         localFiles = new TreeSet<>();
         replicatedFiles = new TreeSet<>();
 
+        lookForNewFiles();
+    }
+
+    public void lookForNewFiles() {
         // TODO load json
         log.info("Loading replication structure");
         File dir = new File(replicationConfig.getLocal());
@@ -35,7 +39,7 @@ public class ReplicationComponent {
         if (directoryListing != null) {
             // ignore gitkeeps
             for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
-                // add to files
+                // add to files (it's a set so no duplicates)
                 localFiles.add(new FileStructure(false, child.getPath())); // todo decide whether or not the file should be replicated
             }
         }
