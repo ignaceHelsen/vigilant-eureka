@@ -8,8 +8,8 @@ import lombok.Setter;
 @Getter
 @AllArgsConstructor
 public class FileStructure implements Comparable<FileStructure> {
-    private boolean replicated;
     private String path;
+    private boolean replicated;
 
     @Override
     public int compareTo(FileStructure o) {

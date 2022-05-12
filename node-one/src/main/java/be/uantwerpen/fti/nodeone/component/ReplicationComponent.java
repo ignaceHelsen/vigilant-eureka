@@ -40,7 +40,7 @@ public class ReplicationComponent {
             // ignore gitkeeps
             for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
                 // add to files (it's a set so no duplicates)
-                localFiles.add(new FileStructure(false, child.getPath())); // As new files are being found, these are of course not replicated yet so we set the boolean to false
+                localFiles.add(new FileStructure(child.getPath(), false)); // As new files are being found, these are of course not replicated yet so we set the boolean to false
             }
         }
 
@@ -50,8 +50,12 @@ public class ReplicationComponent {
             // ignore gitkeeps
             for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
                 // add to files
-                replicatedFiles.add(new FileStructure(false, child.getPath()));
+                replicatedFiles.add(new FileStructure( child.getPath(), false));
             }
         }
+    }
+
+    public void addLocalFile(FileStructure fileStructure) {
+        this.localFiles.add(fileStructure);
     }
 }
