@@ -30,13 +30,10 @@ public class NetworkService {
     private final NetworkConfig networkConfig;
     private final RestService restService;
     private final NodeStructure nodeStructure;
-    private final RestTemplate restTemplate;
     private final NamingServerConfig namingServerConfig;
 
     @Async
     public void registerNode() {
-        // https://www.baeldung.com/java-broadcast-multicast
-        // multicast to group
         DatagramSocket socket;
         InetAddress group;
 
@@ -64,9 +61,6 @@ public class NetworkService {
 
             if (ipNodes == null) log.warn("Node could not be found");
             else {
-                // this is the important part: we need to update our own structure with the new Dinfo
-                nodeStructure.setNextNode(ipNodes.getIdNext());
-                nodeStructure.setPreviousNode(ipNodes.getIdPrevious());
 
                 // now send to our peers
                 if (ipNodes.getIdNext() != nodeStructure.getCurrentHash()) {

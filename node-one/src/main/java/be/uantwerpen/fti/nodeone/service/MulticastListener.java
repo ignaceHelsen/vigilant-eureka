@@ -21,8 +21,8 @@ public class MulticastListener {
     @Async
     public void listenForMulticast() {
         while (true) {
-            try {
-                byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
+            /*try {
+               *//* byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
 
@@ -37,11 +37,11 @@ public class MulticastListener {
                 nodeStructure.setCurrentHash(ownHash);
 
                 if (nodeHash < ownHash) nodeStructure.setPreviousNode(nodeHash);
-                else if (nodeHash > ownHash) nodeStructure.setNextNode(nodeHash);
+                else if (nodeHash > ownHash) nodeStructure.setNextNode(nodeHash);*//*
 
             } catch (IOException e) {
                 e.printStackTrace();
-            }
+            }*/
         }
     }
 }
