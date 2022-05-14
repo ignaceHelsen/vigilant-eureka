@@ -19,6 +19,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Component
 @Slf4j
+/**
+ * This component will take care of the storage of local and replication files
+ */
 public class ReplicationComponent {
     private Set<FileStructure> localFiles;
     private Set<FileStructure> replicatedFiles;
@@ -31,6 +34,10 @@ public class ReplicationComponent {
         lookForNewFiles();
     }
 
+    /**
+     * Will look for files in the /storage directory. /local files will be added to internal list while /replica files are added to another internal list. Gitkeeps will be ignored.
+     * Files that have not been found in the config json are added and regarded as NOT yet replicated.
+     */
     public void lookForNewFiles() {
         // TODO load json
         log.info("Loading replication structure");

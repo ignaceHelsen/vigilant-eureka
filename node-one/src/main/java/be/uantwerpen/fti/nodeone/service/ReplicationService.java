@@ -58,9 +58,10 @@ public class ReplicationService {
                         replicate(file.getPath(), destination);
                         file.setReplicated(true);
                     } catch (IOException e) {
+                        log.warn("Could not replicate file {}", file.getPath());
                         e.printStackTrace();
                     } catch (RestClientException e) {
-                        log.info("Could not connect to server at {}", destination);
+                        log.warn("Could not connect to server at {}", destination);
                         e.printStackTrace();
                     }
                 } catch (Exception e) {
@@ -71,11 +72,19 @@ public class ReplicationService {
         });
     }
 
-    // TODO when a file has been added, replicate it immediately
-
-
     /**
      * Check if all needed directories for replication are present.
+     * Create when not present.
+     *
+     * Directories to be checked:
+     * <ul>
+     *     <li>/storage</li>
+     *     <ul>
+     *         <li>/local</li>
+     *         <li>/replica</li>
+     *         <li>/log</li>
+     *     </ul>
+     * </ul>
      */
     public void precheck() {
         File localDir = new File("src/resources/storage/local");
@@ -85,7 +94,9 @@ public class ReplicationService {
         if (!localDir.exists()) {
             log.info("Created local directory.");
             try {
-                localDir.mkdirs();
+                boolean created = localDir.mkdirs();
+
+                if (!created) log.warn("Failure while creating dir {}", localDir.getName());
             } catch (SecurityException e) {
                 log.error("Unable to create storage/local directory. Security Exception");
             }
@@ -94,7 +105,9 @@ public class ReplicationService {
         if (!replicaDir.exists()) {
             log.info("Created replica directory.");
             try {
-                replicaDir.mkdirs();
+                boolean created = replicaDir.mkdirs();
+
+                if (!created) log.warn("Failure while creating dir {}", replicaDir.getName());
             } catch (SecurityException e) {
                 log.error("Unable to create storage/replica directory. Security Exception");
             }
@@ -103,7 +116,9 @@ public class ReplicationService {
         if (!logDir.exists()) {
             log.info("Created log directory.");
             try {
-                logDir.mkdirs();
+                boolean created = logDir.mkdirs();
+
+                if (!created) log.warn("Failure while creating dir {}", logDir.getName());
             } catch (SecurityException e) {
                 log.error("Unable to create storage/log directory. Security Exception");
             }

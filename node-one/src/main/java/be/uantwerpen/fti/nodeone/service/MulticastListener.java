@@ -3,6 +3,7 @@ package be.uantwerpen.fti.nodeone.service;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class MulticastListener {
     private final HashCalculator hashCalculator;
     private final NetworkConfig networkConfig;
@@ -41,6 +43,7 @@ public class MulticastListener {
 
             } catch (IOException e) {
                 e.printStackTrace();
+                log.warn("Socket could not be read");
             }
         }
     }

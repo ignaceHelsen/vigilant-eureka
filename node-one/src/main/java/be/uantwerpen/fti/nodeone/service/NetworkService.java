@@ -30,6 +30,9 @@ public class NetworkService {
     private final NodeStructure nodeStructure;
     private final NamingServerConfig namingServerConfig;
 
+    /**
+     * Will register itself by multicast to the group configured in application.properties/multicastPort
+     */
     @Async
     public void registerNode() {
         // https://www.baeldung.com/java-broadcast-multicast
@@ -52,6 +55,9 @@ public class NetworkService {
         }
     }
 
+    /**
+     * Will periodically (30s) broadcast its presence to neighbouring nodes.
+     */
     @Scheduled(fixedRate = 30 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
     public void BroadcastPresence() {
         log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d (0 means the current node is its own next node)", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
@@ -83,6 +89,7 @@ public class NetworkService {
             outputStream.writeInt(nodeStructure.getCurrentHash());
             outputStream.close();
         } catch (IOException e) {
+            log.warn("Failed to update node {}:{}\nSending failure command to naming server.", ip, port);
             nodeFailure(hash);
             e.printStackTrace();
         }
