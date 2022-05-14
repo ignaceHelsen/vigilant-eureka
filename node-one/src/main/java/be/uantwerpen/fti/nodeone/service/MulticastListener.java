@@ -3,6 +3,7 @@ package be.uantwerpen.fti.nodeone.service;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class MulticastListener {
     private final HashCalculator hashCalculator;
     private final NetworkConfig networkConfig;
@@ -21,8 +23,8 @@ public class MulticastListener {
     @Async
     public void listenForMulticast() {
         while (true) {
-            /*try {
-               *//* byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
+            try {
+                byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
 
@@ -37,11 +39,12 @@ public class MulticastListener {
                 nodeStructure.setCurrentHash(ownHash);
 
                 if (nodeHash < ownHash) nodeStructure.setPreviousNode(nodeHash);
-                else if (nodeHash > ownHash) nodeStructure.setNextNode(nodeHash);*//*
+                else if (nodeHash > ownHash) nodeStructure.setNextNode(nodeHash);
 
             } catch (IOException e) {
                 e.printStackTrace();
-            }*/
+                log.warn("Socket could not be read");
+            }
         }
     }
 }

@@ -2,25 +2,23 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
-import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.Socket;
 
 @Service
 @Slf4j
@@ -32,6 +30,9 @@ public class NetworkService {
     private final NodeStructure nodeStructure;
     private final NamingServerConfig namingServerConfig;
 
+    /**
+     * Will register itself by multicast to the group configured in application.properties/multicastPort
+     */
     @Async
     public void registerNode() {
         DatagramSocket socket;
@@ -52,6 +53,9 @@ public class NetworkService {
         }
     }
 
+    /**
+     * Will periodically (30s) broadcast its presence to neighbouring nodes.
+     */
     @Scheduled(fixedRate = 30 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
     public void BroadcastPresence() {
         log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d (0 means the current node is its own next node)", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
@@ -84,6 +88,7 @@ public class NetworkService {
             outputStream.writeInt(nodeStructure.getCurrentHash());
             outputStream.close();
         } catch (IOException e) {
+            log.warn("Failed to update node {}:{}\nSending failure command to naming server.", ip, port);
             nodeFailure(hash);
             e.printStackTrace();
         }

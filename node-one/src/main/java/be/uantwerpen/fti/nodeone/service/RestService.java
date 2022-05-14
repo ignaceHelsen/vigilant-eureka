@@ -36,6 +36,7 @@ public class RestService {
         }
     }
 
+    @Deprecated
     public boolean registerNode(RegisterNodeRequest registerRequest) {
         log.info("Requesting node in naming server");
         try {
