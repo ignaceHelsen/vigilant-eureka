@@ -65,4 +65,8 @@ public class ReplicationComponent {
     public void addLocalFile(FileStructure fileStructure) {
         this.localFiles.add(fileStructure);
     }
+
+    public void addReplicationFile(FileStructure fileStructure)  {
+        this.replicatedFiles.add(fileStructure);
+    }
 }

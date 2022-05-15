@@ -45,8 +45,6 @@ public class ReplicationService {
 
     @Scheduled(initialDelay = 10 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
     public void startReplication() {
-        replicationComponent.lookForNewFiles();
-
         // check only for local files
         replicationComponent.getLocalFiles().forEach(file -> {
             // replicate every file which has not yet been replicated
@@ -181,7 +179,7 @@ public class ReplicationService {
                 path = String.format("%s/%s", replicationConfig.getLocal(), file.getOriginalFilename());
                 log.info("Saving to {}", path);
                 // Also replicate it
-                FileStructure fileStruct = new FileStructure(path, false);
+                FileStructure fileStruct = new FileStructure(path, false); // replication means that the file is stored somewhere else
                 replicationComponent.addLocalFile(fileStruct);
 
                 // Since the new file is stored locally, we can already replicate it
@@ -192,7 +190,7 @@ public class ReplicationService {
                         replicate(path, destination);
                         fileStruct.setReplicated(true);
                     } catch (IOException e) {
-                        log.error("Error occured while trying to replicate file {}", path);
+                        log.error("Error occurred while trying to replicate file {}", path);
                         e.printStackTrace();
                         return false;
                     } catch (RestClientException e) {
@@ -208,6 +206,9 @@ public class ReplicationService {
             } else {
                 path = String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename());
                 log.info("Replicating to {}", path);
+
+                FileStructure fileStruct = new FileStructure(path, false); // replication means that the file is stored somewhere else
+                replicationComponent.addReplicationFile(fileStruct);
             }
 
             File outputFile = new File(path);
