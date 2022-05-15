@@ -45,6 +45,8 @@ public class ReplicationService {
 
     @Scheduled(initialDelay = 10 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
     public void startReplication() {
+        replicationComponent.lookForNewFiles();
+
         // check only for local files
         replicationComponent.getLocalFiles().forEach(file -> {
             // replicate every file which has not yet been replicated
