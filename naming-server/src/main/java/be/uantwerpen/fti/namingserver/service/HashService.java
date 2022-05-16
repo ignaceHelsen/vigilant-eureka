@@ -142,4 +142,15 @@ public class HashService {
     public int mapSize() {
         return nodes.size();
     }
+
+    public String getReplicationNode(String filename) {
+        int hash = calculateHash(filename);
+
+        // first check if the hash is lower than any node we have, if so, return the highest node
+        if (hash < nodes.firstKey()) {
+            return nodes.lastEntry().getValue();
+        }
+        int node = getPrevious(hash);
+        return nodes.get(node);
+    }
 }

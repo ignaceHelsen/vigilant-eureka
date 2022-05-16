@@ -52,7 +52,11 @@ public class NamingController {
     @GetMapping("/replicationDestination/{filename}")
     public ResponseEntity<String> getReplicationDestination(@PathVariable String filename) {
         log.info("Request received for file replication: {}", filename);
-        // TODO ReplicationService
-        return ResponseEntity.ok("host3.group5.6dist");
+        String destination = hashService.getReplicationNode(filename);
+        if (destination == null) {
+            log.info("No node found.");
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(destination);
     }
 }
