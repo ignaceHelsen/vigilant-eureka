@@ -6,6 +6,7 @@ import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.domain.Action;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
+import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -26,6 +27,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -38,6 +43,8 @@ public class ReplicationService {
     private final HashCalculator hashCalculator;
     private final ReplicationConfig replicationConfig;
     private final NetworkConfig networkConfig;
+    private final RestService restService;
+    private final NetworkService networkService;
 
     public void initializeReplication() {
         replicationComponent.initialize();
@@ -184,58 +191,130 @@ public class ReplicationService {
      * @param action: Local or Replica file.
      * @return If storing didn't result in an error.
      */
-    public boolean storeFile(MultipartFile file, Action action) {
+    public boolean storeFile(MultipartFile file, Action action) throws IOException {
         byte[] bytes;
-        try {
-            bytes = file.getBytes();
-            String path;
-            if (action == Action.LOCAL) {
-                path = String.format("%s/%s", replicationConfig.getLocal(), file.getOriginalFilename());
-                log.info("Saving to {}", path);
-                // Also replicate it
-                FileStructure fileStruct = new FileStructure(path, false); // replication means that the file is stored somewhere else
-                replicationComponent.addLocalFile(fileStruct);
+        bytes = file.getBytes();
+        String path;
+        if (action == Action.LOCAL) {
+            path = String.format("%s/%s", replicationConfig.getLocal(), file.getOriginalFilename());
+            log.info("Saving to {}", path);
+            // Also replicate it
+            FileStructure fileStruct = new FileStructure(path, false); // replication means that the file is stored somewhere else
+            replicationComponent.addLocalFile(fileStruct);
 
-                // Since the new file is stored locally, we can already replicate it
-                try {
-                    String destination = getDestination(path);
-                    if (destination != null) {
-                        try {
-                            replicate(path, destination);
-                            fileStruct.setReplicated(true);
-                        } catch (IOException e) {
-                            log.error("Error occurred while trying to replicate file {}", path);
-                            e.printStackTrace();
-                            return false;
-                        } catch (RestClientException e) {
-                            log.warn("Could not connect to server at {}", destination);
-                            e.printStackTrace();
-                            return false;
-                        }
+            // Since the new file is stored locally, we can already replicate it
+            try {
+                String destination = getDestination(path);
+                if (destination != null) {
+                    try {
+                        replicate(path, destination);
+                        fileStruct.setReplicated(true);
+                    } catch (IOException e) {
+                        log.error("Error occurred while trying to replicate file {}", path);
+                        e.printStackTrace();
+                        return false;
+                    } catch (RestClientException e) {
+                        log.warn("Could not connect to server at {}", destination);
+                        e.printStackTrace();
+                        return false;
                     }
-                } catch (Exception e) {
-                    log.error("Unable to connect to naming server");
-                    e.printStackTrace();
-                    return false;
                 }
-            } else {
-                path = String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename());
-                log.info("Replicating to {}", path);
-
-                FileStructure fileStruct = new FileStructure(path, false); // replication means that the file is stored somewhere else
-                replicationComponent.addReplicationFile(fileStruct);
+            } catch (Exception e) {
+                log.error("Unable to connect to naming server");
+                e.printStackTrace();
+                return false;
             }
+        } else {
+            path = String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename());
+            log.info("Replicating to {}", path);
 
-            File outputFile = new File(path);
-            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-                fos.write(bytes);
+            FileStructure fileStruct = new FileStructure(path, false); // replication means that the file is stored somewhere else
+            replicationComponent.addReplicationFile(fileStruct);
+        }
+
+        File outputFile = new File(path);
+        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+            fos.write(bytes);
+        }
+
+        return true;
+    }
+
+    public boolean storeFiles(List<MultipartFile> files, Action action) throws IOException {
+        for (MultipartFile file : files) {
+            boolean success = storeFile(file, action);
+        }
+
+        return true;
+    }
+
+    /**
+     * Will search for replica files that should belong to another node.
+     *
+     * @param nodeAddress: The other node requesting its files.
+     */
+    public void transferAndDeleteFiles(String nodeAddress) {
+        MultiValueMap<String, Object> files = new LinkedMultiValueMap<>();
+        List<File> filesToDelete = new ArrayList<>();
+
+        File dir = new File(replicationConfig.getReplica());
+        File[] directoryListing = dir.listFiles();
+        if (directoryListing != null) {
+            // ignore gitkeeps
+            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
+                // search for replicas
+                // go to naming server to ask which node should have this file, if the response is the same as the node, it should be added to the list
+                String destination = getDestination(child.getPath());
+                if (destination != null && destination.equalsIgnoreCase(nodeAddress)) {
+                    // add file to list
+                    files.add(child.getName(), getFile(child.getPath()));
+                    filesToDelete.add(child);
+                }
             }
+        }
 
-            return true;
+        // transfer files to node
+        try {
+            uploadMultipleFilesToNode(nodeAddress, files);
         } catch (IOException e) {
+            log.error("Unable to transfer file to node ({})", nodeAddress);
             e.printStackTrace();
         }
 
-        return false;
+        // now delete the files
+        filesToDelete.forEach(f -> {
+            try {
+                f.delete();
+            } catch (Exception e) {
+                log.warn("Unable to delete file: {}", f.getPath());
+            }
+        });
+    }
+
+    private void uploadMultipleFilesToNode(String nodeAddress, MultiValueMap<String, Object> files) throws IOException {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(files, headers);
+        String serverUrl = String.format("http://%s:%s/api/replication/transfer/", nodeAddress, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Boolean> response = restTemplate.postForEntity(serverUrl, requestEntity, Boolean.class);
+
+        if (Boolean.TRUE.equals(response.getBody()))
+            log.info("Succesfully transfered files {}", new ArrayList<>(files.toSingleValueMap().keySet()));
+        else log.warn("Failed replicating files {}", new ArrayList<>(files.toSingleValueMap().keySet()));
+    }
+
+    public void lookForFilesAtNeighbouringNodes() {
+        NextAndPreviousNode nodes = restService.getNextAndPrevious(networkService.getCurrentHash());
+        ResponseEntity<String> response;
+
+        // ask next node for files that should belong to us
+        response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%d",
+                nodes.getIpNext(), namingServerConfig.getPort(), networkService.getCurrentHash()), String.class);
+
+        // ask previous node for files that should belong to us
+        response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%d",
+                nodes.getIpPrevious(), namingServerConfig.getPort(), networkService.getCurrentHash()), String.class);
     }
 }

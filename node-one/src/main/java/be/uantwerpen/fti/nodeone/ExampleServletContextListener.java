@@ -35,5 +35,6 @@ public class ExampleServletContextListener
 
         replicationService.initializeReplication();
         replicationService.precheck(); // check if all needed directories for replication are present.
+        replicationService.lookForFilesAtNeighbouringNodes();
     }
 }
