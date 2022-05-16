@@ -5,7 +5,9 @@ import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.domain.Action;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
+import be.uantwerpen.fti.nodeone.domain.LogStructure;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
+import com.google.gson.Gson;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -25,9 +27,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 @Service
 @Slf4j
@@ -41,6 +45,7 @@ public class ReplicationService {
     private final ReplicationConfig replicationConfig;
     private final NodeStructure nodeStructure;
     private final RestService restService;
+    private final Gson gson;
 
     public void initializeReplication() {
         replicationComponent.initialize();
@@ -58,8 +63,9 @@ public class ReplicationService {
                     String destination = getDestination(file.getPath());
 
                     try {
-                        replicate(file.getPath(), destination);
+                        replicate(file.getPath(), destination, file.getLogFile().getPath());
                         file.setReplicated(true);
+                        replicationComponent.getReplicatedLocalFiles().add(file);
                     } catch (IOException e) {
                         log.warn("Could not replicate file {}", file.getPath());
                         e.printStackTrace();
@@ -142,7 +148,7 @@ public class ReplicationService {
      * @param destination: The destination node to replicate it to.
      * @throws IOException: When error.
      */
-    private void replicate(String path, String destination) throws IOException {
+    private void replicate(String path, String destination, String logPath) throws IOException {
         log.info("Replicating file {}", path);
 
         HttpHeaders headers = new HttpHeaders();
@@ -152,6 +158,7 @@ public class ReplicationService {
 
         if (path == null) log.warn("Path of file has returned null");
         body.add("file", getFile(path));
+        body.add("log", getFile(logPath));
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
         String serverUrl = String.format("http://%s:%s/api/replication/replicate/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
@@ -175,27 +182,30 @@ public class ReplicationService {
      * @param action: Local or Replica file.
      * @return If storing didn't result in an error.
      */
-    public boolean storeFile(MultipartFile file, Action action) {
+    public boolean storeFile(MultipartFile file, MultipartFile logFile, Action action) {
         byte[] bytes;
         try {
             bytes = file.getBytes();
-            String path;
+            String filePath;
+            String logPath = replicationComponent.createLogPath(file.getOriginalFilename());
             if (action == Action.LOCAL) {
-                path = String.format("%s/%s", replicationConfig.getLocal(), file.getOriginalFilename());
-                log.info("Saving to {}", path);
-                // Also replicate it
-                FileStructure fileStruct = new FileStructure(path, false);
-                replicationComponent.addLocalFile(fileStruct);
+                filePath = replicationComponent.createFilePath(file.getOriginalFilename());
 
+                log.info("Saving to {}", filePath);
+                // Also replicate it
+                FileStructure fileStruct = new FileStructure(filePath, false, new LogStructure(logPath));
+                replicationComponent.addLocalFile(fileStruct);
+                replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
                 // Since the new file is stored locally, we can already replicate it
                 try {
-                    String destination = getDestination(path);
+                    String destination = getDestination(filePath);
 
                     try {
-                        replicate(path, destination);
+                        replicate(filePath, destination, logPath);
                         fileStruct.setReplicated(true);
+                        replicationComponent.addReplicatedLocalFile(fileStruct);
                     } catch (IOException e) {
-                        log.error("Error occured while trying to replicate file {}", path);
+                        log.error("Error occured while trying to replicate file {}", filePath);
                         e.printStackTrace();
                         return false;
                     } catch (RestClientException e) {
@@ -209,11 +219,19 @@ public class ReplicationService {
                     return false;
                 }
             } else {
-                path = String.format("%s/%s", replicationConfig.getReplica(), file.getOriginalFilename());
-                log.info("Replicating to {}", path);
+                filePath = replicationComponent.createFilePath(file.getOriginalFilename());
+                File outputFile = new File(logPath);
+                try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+                    fos.write(bytes);
+                }
+                FileStructure fileStructure = new FileStructure(filePath, true,
+                        replicationComponent.loadLog(file.getOriginalFilename()).orElse(new LogStructure(replicationComponent.createLogPath(file.getOriginalFilename()))));
+                replicationComponent.addReplicatedFile(fileStructure);
+                replicationComponent.saveLog(fileStructure.getLogFile(), file.getOriginalFilename());
+                log.info("Replicating to {}", filePath);
             }
 
-            File outputFile = new File(path);
+            File outputFile = new File(filePath);
             try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 fos.write(bytes);
             }
@@ -229,33 +247,24 @@ public class ReplicationService {
     public void shutdown() {
         // Find previous node -> Naming server
         int previousNode = nodeStructure.getPreviousNode();//restService.getPreviousNode(nodeStructure.getCurrentHash());
+        String previousIp = restService.requestNodeIpWithHashValue(previousNode);
         //replicate(?, restService.requestNodeIpWithHashValue(previousNode)));
         // Edge case -> Previous previous
         int secondPreviousNode = restService.getPreviousNode(nodeStructure.getPreviousNode());
+        String secondPreviouIp = restService.requestNodeIpWithHashValue(secondPreviousNode);
+
         //replicate.(?,  restService.requestNodeIpWithHashValue(secondPreviousNode));
         // Send all replicated files
         // Except not downloaded files
-
-
-        // Send log file
+        replicationComponent.getReplicatedFiles().forEach(file -> {
+            try {
+                replicate(file.getPath(), previousIp, file.getLogFile().getPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
 
         // Send owner of own locals files warning
-
-    }
-
-    public void sendReplicatedFiles() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        //body.add("replicatedFiles", new ReplicatedFileDto("test.txt", getFile("pom.xml"), getFile("pom.xml")));
-        //body.add("replicatedFiles", new ReplicatedFileDto("test.txt", getFile("pom.xml"), getFile("pom.xml")));
-        //body.add("replicatedFiles", new ReplicatedFileDto("test.txt", getFile("pom.xml"), getFile("pom.xml")));
-        body.add("replicatedFiles", getFile("pom.xml"));
-
-        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        String serverUrl = "http://localhost:6968/api/file/replicateFiles";
-        ResponseEntity<String> response = restTemplate.postForEntity(serverUrl, requestEntity, String.class);
 
     }
 }

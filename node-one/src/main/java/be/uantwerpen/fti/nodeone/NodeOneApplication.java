@@ -4,6 +4,8 @@ import be.uantwerpen.fti.nodeone.service.MulticastListener;
 import be.uantwerpen.fti.nodeone.service.NetworkService;
 import be.uantwerpen.fti.nodeone.service.ReplicationService;
 import be.uantwerpen.fti.nodeone.service.TcpListener;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
@@ -25,6 +27,11 @@ public class NodeOneApplication {
         ServletListenerRegistrationBean<ServletContextListener> srb = new ServletListenerRegistrationBean<>();
         srb.setListener(new NodeOneServletContextListener(networkService, tcpListener, multicastListener, replicationService));
         return srb;
+    }
+
+    @Bean
+    public Gson gson() {
+        return new GsonBuilder().setPrettyPrinting().create();
     }
 
 }

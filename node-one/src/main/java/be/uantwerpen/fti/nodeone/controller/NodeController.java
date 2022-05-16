@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@RestController
+@RestController()
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/api/replication")
@@ -20,7 +20,7 @@ public class NodeController {
 
     @PostMapping(path = "/store")
     public ResponseEntity<Boolean> storeFile(@RequestParam("file") MultipartFile file) {
-        boolean success = replicationService.storeFile(file, Action.LOCAL);
+        boolean success = replicationService.storeFile(file, null, Action.LOCAL);
 
         if (success)
             return ResponseEntity.ok(true);
@@ -29,8 +29,8 @@ public class NodeController {
     }
 
     @PostMapping(path = "/replicate")
-    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file) {
-        boolean success = replicationService.storeFile(file, Action.REPLICATE);
+    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file, @RequestParam("log") MultipartFile log) {
+        boolean success = replicationService.storeFile(file, log, Action.REPLICATE);
 
         if (success)
             return ResponseEntity.ok(true);

@@ -1,11 +1,11 @@
 package be.uantwerpen.fti.nodeone.domain;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 public class NodeStructure {
     private int previousNode; // contains a hash
