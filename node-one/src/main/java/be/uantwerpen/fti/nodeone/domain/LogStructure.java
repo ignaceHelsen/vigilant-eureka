@@ -30,18 +30,30 @@ public class LogStructure {
         this.fileOwners.add(new Owner(hashValue, LocalDate.now()));
     }
 
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    static class Owner {
-        private int hashValue;
-        private LocalDate timeStamp;
+    public Owner getOwner(int index) {
+        return fileOwners.get(index);
     }
 
     @Getter
     @Setter
     @AllArgsConstructor
-    static class Download {
+    public static class Owner {
+        private int hashValue;
+        private LocalDate timeStamp;
+
+        public int getHashValue() {
+            return hashValue;
+        }
+
+        public LocalDate getTimeStamp() {
+            return timeStamp;
+        }
+    }
+
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    public static class Download {
         private LocalDate timeStamp;
     }
 }

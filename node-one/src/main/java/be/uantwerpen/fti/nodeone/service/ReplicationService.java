@@ -134,8 +134,7 @@ public class ReplicationService {
         }
     }
 
-    private String getDestination(String path) throws RestClientException {
-        String filename = Paths.get(path).getFileName().toString();
+    private String getDestination(String filename) throws RestClientException {
         // Ask naming server where we should replicate the file to
         ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/replicationDestination/%d",
                 namingServerConfig.getAddress(), namingServerConfig.getPort(), hashCalculator.calculateHash(filename)), String.class);
@@ -162,7 +161,6 @@ public class ReplicationService {
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
         String serverUrl = String.format("http://%s:%s/api/replication/replicate/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
-        RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<Boolean> response = restTemplate.postForEntity(serverUrl, requestEntity, Boolean.class);
 
         if (Boolean.TRUE.equals(response.getBody())) log.info("Succesfully replicated file {}", path);
@@ -187,13 +185,13 @@ public class ReplicationService {
         try {
             bytes = file.getBytes();
             String filePath;
-            String logPath = replicationComponent.createLogPath(file.getOriginalFilename());
+            String logPath = replicationComponent.createLogPath(logFile.getOriginalFilename());
             if (action == Action.LOCAL) {
                 filePath = replicationComponent.createFilePath(file.getOriginalFilename());
 
                 log.info("Saving to {}", filePath);
                 // Also replicate it
-                FileStructure fileStruct = new FileStructure(filePath, false, new LogStructure(logPath));
+                FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
                 replicationComponent.addLocalFile(fileStruct);
                 replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
                 // Since the new file is stored locally, we can already replicate it
@@ -222,9 +220,9 @@ public class ReplicationService {
                 filePath = replicationComponent.createFilePath(file.getOriginalFilename());
                 File outputFile = new File(logPath);
                 try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-                    fos.write(bytes);
+                    fos.write(logFile.getBytes());
                 }
-                FileStructure fileStructure = new FileStructure(filePath, true,
+                FileStructure fileStructure = new FileStructure(filePath, file.getOriginalFilename(), true,
                         replicationComponent.loadLog(file.getOriginalFilename()).orElse(new LogStructure(replicationComponent.createLogPath(file.getOriginalFilename()))));
                 replicationComponent.addReplicatedFile(fileStructure);
                 replicationComponent.saveLog(fileStructure.getLogFile(), file.getOriginalFilename());
@@ -251,20 +249,28 @@ public class ReplicationService {
         //replicate(?, restService.requestNodeIpWithHashValue(previousNode)));
         // Edge case -> Previous previous
         int secondPreviousNode = restService.getPreviousNode(nodeStructure.getPreviousNode());
-        String secondPreviouIp = restService.requestNodeIpWithHashValue(secondPreviousNode);
+        String secondPreviousIp = restService.requestNodeIpWithHashValue(secondPreviousNode);
 
         //replicate.(?,  restService.requestNodeIpWithHashValue(secondPreviousNode));
         // Send all replicated files
         // Except not downloaded files
         replicationComponent.getReplicatedFiles().forEach(file -> {
             try {
-                replicate(file.getPath(), previousIp, file.getLogFile().getPath());
+                if (previousNode != file.getLogFile().getOwner(0).getHashValue()){
+                    replicate(file.getPath(), previousIp, file.getLogFile().getPath());
+                }
+                else if (secondPreviousNode != nodeStructure.getCurrentHash()){
+                    replicate(file.getPath(), secondPreviousIp, file.getLogFile().getPath());
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
 
         // Send owner of own locals files warning
-
+        replicationComponent.getReplicatedLocalFiles().forEach(file -> {
+            String serverUrl = String.format("http://%s:%s/api/replication/warnDeletedFiles/%s", getDestination(file.getFileName()), namingServerConfig.getPort(), file.getFileName()); // the namingserverconfig getPort is the same as our controller's port
+            restTemplate.put(serverUrl, Boolean.class);
+        });
     }
 }

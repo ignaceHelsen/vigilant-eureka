@@ -58,7 +58,7 @@ public class ReplicationComponent {
         try {
             replicatedLocalFiles = gson.fromJson(new FileReader(file), new TypeToken<TreeSet<FileStructure>>(){}.getType());
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            replicatedLocalFiles = new TreeSet<>();
         }
 
         lookForNewFiles();
@@ -69,7 +69,6 @@ public class ReplicationComponent {
      * Files that have not been found in the config json are added and regarded as NOT yet replicated.
      */
     public void lookForNewFiles() {
-        // TODO load json
         log.info("Loading replication structure");
         File dir = new File(replicationConfig.getLocal());
         File[] directoryListing = dir.listFiles();
@@ -80,13 +79,13 @@ public class ReplicationComponent {
                 // add to files (t's a set so no duplicates)
                 // load josn containing list of all files that have been replicated
                 // if current child is foundin this list, set replicated to true. otherwise set to false
-                FileStructure fileStructure = new FileStructure(child.getPath(), false, new LogStructure(createLogPath(child.getName())));
+                FileStructure fileStructure = new FileStructure(child.getPath(), child.getName(), false, new LogStructure(createLogPath(child.getName())));
                 localFiles.add(fileStructure); // As new files are being found, these are of course not replicated yet so we set the boolean to false
                 saveLog(fileStructure.getLogFile(), child.getName());
             }
         }
 
-        dir = new File(replicationConfig.getReplica());
+        /*dir = new File(replicationConfig.getReplica());
         directoryListing = dir.listFiles();
         if (directoryListing != null) {
             // ignore gitkeeps
@@ -95,7 +94,7 @@ public class ReplicationComponent {
                 // add to files
                 replicatedFiles.add(new FileStructure(child.getPath(), false, loadLog(child.getName()).orElse(new LogStructure(createLogPath(child.getName())))));
             }
-        }
+        }*/
     }
 
     public String createLogPath(String fileName) {
@@ -149,6 +148,4 @@ public class ReplicationComponent {
         }
         logStructure.registerOwner(nodeStructure.getCurrentHash());
     }
-
-
 }

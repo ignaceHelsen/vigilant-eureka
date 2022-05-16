@@ -5,10 +5,7 @@ import be.uantwerpen.fti.nodeone.service.ReplicationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController()
@@ -20,7 +17,7 @@ public class NodeController {
 
     @PostMapping(path = "/store")
     public ResponseEntity<Boolean> storeFile(@RequestParam("file") MultipartFile file) {
-        boolean success = replicationService.storeFile(file, null, Action.LOCAL);
+        boolean success = replicationService.storeFile(file, file, Action.LOCAL);
 
         if (success)
             return ResponseEntity.ok(true);
@@ -36,5 +33,10 @@ public class NodeController {
             return ResponseEntity.ok(true);
 
         return ResponseEntity.badRequest().build();
+    }
+
+    @PutMapping(path = "/warnDeletedFiles")
+    public ResponseEntity<Boolean> warnDeletedFiles(@PathVariable String fileName) {
+        return ResponseEntity.ok(true);
     }
 }

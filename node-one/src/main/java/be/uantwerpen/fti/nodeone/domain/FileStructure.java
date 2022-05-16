@@ -6,23 +6,13 @@ import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
 @Setter
+@Getter
 @AllArgsConstructor
 public class FileStructure implements Comparable<FileStructure> {
     private String path;
+    private String fileName;
     private boolean replicated;
     private LogStructure logFile;
-
-    public String getPath() {
-        return path;
-    }
-
-    public boolean isReplicated() {
-        return replicated;
-    }
-
-    public LogStructure getLogFile() {
-        return logFile;
-    }
 
     @Override
     public int compareTo(FileStructure o) {

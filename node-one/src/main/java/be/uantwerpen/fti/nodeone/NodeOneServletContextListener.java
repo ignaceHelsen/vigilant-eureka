@@ -21,6 +21,7 @@ public class NodeOneServletContextListener
     @Override
     public void contextDestroyed(ServletContextEvent event) {
         networkService.nodeShutDown();
+        replicationService.shutdown();
     }
 
     @Override

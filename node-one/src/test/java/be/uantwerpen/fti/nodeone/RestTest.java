@@ -37,7 +37,6 @@ public class RestTest {
 
     @Test
     public void pls() {
-        replicationService.sendReplicatedFiles();
         System.out.println();
     }
 
