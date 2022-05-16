@@ -2,6 +2,7 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
+import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.domain.Action;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
@@ -9,15 +10,13 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,6 +37,7 @@ public class ReplicationService {
     private final RestTemplate restTemplate;
     private final HashCalculator hashCalculator;
     private final ReplicationConfig replicationConfig;
+    private final NetworkConfig networkConfig;
 
     public void initializeReplication() {
         replicationComponent.initialize();
@@ -53,7 +53,9 @@ public class ReplicationService {
             if (!file.isReplicated()) {
                 try {
                     String destination = getDestination(file.getPath());
-
+                    if (destination == null) {
+                        return;
+                    }
                     try {
                         replicate(file.getPath(), destination);
                         file.setReplicated(true);
@@ -75,7 +77,7 @@ public class ReplicationService {
     /**
      * Check if all needed directories for replication are present.
      * Create when not present.
-     *
+     * <p>
      * Directories to be checked:
      * <ul>
      *     <li>/storage</li>
@@ -128,14 +130,23 @@ public class ReplicationService {
     private String getDestination(String path) throws RestClientException {
         String filename = Paths.get(path).getFileName().toString();
         // Ask naming server where we should replicate the file to
-        ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/replicationDestination/%d",
-                namingServerConfig.getAddress(), namingServerConfig.getPort(), hashCalculator.calculateHash(filename)), String.class);
-        return response.getBody();
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/replicationDestination/%d/%d",
+                    namingServerConfig.getAddress(), namingServerConfig.getPort(), hashCalculator.calculateHash(filename), hashCalculator.calculateHash(networkConfig.getHostName())), String.class);
+
+            return response.getBody();
+        } catch (HttpClientErrorException.NotFound notFound) {
+            log.warn("Naming server did not return node-response for replication of file: {}", path);
+            log.warn("Body: {}", notFound.getResponseBodyAsString());
+            return null;
+
+        }
     }
 
     /**
      * Replication of a file.
-     * @param path: The path to the file.
+     *
+     * @param path:        The path to the file.
      * @param destination: The destination node to replicate it to.
      * @throws IOException: When error.
      */
@@ -168,7 +179,8 @@ public class ReplicationService {
      * Takes care of the storage of a file.
      * If it's a file destined for local storage, besides storing, we also replicate it immediately.
      * If it's a replication file, we just store it in /replication.
-     * @param file: The path to the file.
+     *
+     * @param file:   The path to the file.
      * @param action: Local or Replica file.
      * @return If storing didn't result in an error.
      */
@@ -187,18 +199,19 @@ public class ReplicationService {
                 // Since the new file is stored locally, we can already replicate it
                 try {
                     String destination = getDestination(path);
-
-                    try {
-                        replicate(path, destination);
-                        fileStruct.setReplicated(true);
-                    } catch (IOException e) {
-                        log.error("Error occurred while trying to replicate file {}", path);
-                        e.printStackTrace();
-                        return false;
-                    } catch (RestClientException e) {
-                        log.warn("Could not connect to server at {}", destination);
-                        e.printStackTrace();
-                        return false;
+                    if (destination != null) {
+                        try {
+                            replicate(path, destination);
+                            fileStruct.setReplicated(true);
+                        } catch (IOException e) {
+                            log.error("Error occurred while trying to replicate file {}", path);
+                            e.printStackTrace();
+                            return false;
+                        } catch (RestClientException e) {
+                            log.warn("Could not connect to server at {}", destination);
+                            e.printStackTrace();
+                            return false;
+                        }
                     }
                 } catch (Exception e) {
                     log.error("Unable to connect to naming server");

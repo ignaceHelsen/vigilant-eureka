@@ -6,6 +6,7 @@ import be.uantwerpen.fti.namingserver.controller.dto.RemoveNodeDto;
 import be.uantwerpen.fti.namingserver.service.HashService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,13 +50,20 @@ public class NamingController {
         return ResponseEntity.ok(nextAndPrevious);
     }
 
-    @GetMapping("/replicationDestination/{filename}")
-    public ResponseEntity<String> getReplicationDestination(@PathVariable String filename) {
-        log.info("Request received for file replication: {}", filename);
-        String destination = hashService.getReplicationNode(filename);
+    /**
+     * Will search for a node that will store the filehash.
+     *
+     * @param hash:       The hash of the filename.
+     * @param sourceNode: The hash of the address of the requesting node.
+     * @return String representing the address of the destination node.
+     */
+    @GetMapping("/replicationDestination/{hash}/{sourceNode}")
+    public ResponseEntity<String> getReplicationDestination(@PathVariable int hash, @PathVariable int sourceNode) {
+        log.info("Request received for file replication (hash: {})", hash);
+        String destination = hashService.getReplicationNode(hash, sourceNode);
         if (destination == null) {
             log.info("No node found.");
-            return ResponseEntity.badRequest().build();
+            return new ResponseEntity<>("No node found.", HttpStatus.NOT_FOUND);
         }
         return ResponseEntity.ok(destination);
     }
