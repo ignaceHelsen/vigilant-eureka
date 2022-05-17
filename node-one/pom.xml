@@ -12,7 +12,7 @@
 	<artifactId>node-one</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>node-one</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Distributed system with naming server and nodes</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
