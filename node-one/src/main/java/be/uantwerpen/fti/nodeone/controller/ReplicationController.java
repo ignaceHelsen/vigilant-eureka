@@ -43,8 +43,8 @@ public class ReplicationController {
     /**
      * Will search for replicas that are stored on this node but should be located in another node.
      * Called from another node.
-     * @param destinationNode: The node that is asking for its replicas
-     * @return Files to be transferred
+     * @param destinationNode: The node that is asking for its replicas.
+     * @return A True boolean indicating the transfer is in progress.
      */
     @GetMapping(path = "/move/{destinationNode}")
     public ResponseEntity<Boolean> move(@PathVariable String destinationNode) {

@@ -72,8 +72,9 @@ public class RestService {
 
     public String requestNodeIpWithHashValue(int hashValue) {
         log.info("Requesting ip address with hash value for file ({})", hashValue);
+        if (hashValue == 0) return null; // in some weird cases hashvalue can be 0
         try {
-            ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/registerfile/%d",
+            ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/address/%d",
                     namingServerConfig.getAddress(), namingServerConfig.getPort(), hashValue), String.class);
             return response.getBody();
         } catch (HttpClientErrorException e) {

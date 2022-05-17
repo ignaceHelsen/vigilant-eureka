@@ -28,6 +28,17 @@ public class NamingController {
         return ResponseEntity.ok(destination);
     }
 
+    @GetMapping("/address/{hash}")
+    public ResponseEntity<String> getAddressByHash(@PathVariable int hash) {
+        log.info("Ip address of node with hash ({}) has been requested", hash);
+        String destination = hashService.getAddressWithKey(hash);
+        if (destination == null) {
+            log.info("No node found.");
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(destination);
+    }
+
     @PostMapping("/registerNode")
     public ResponseEntity<Boolean> registerNode(@RequestBody RegisterNodeDto registerDto) {
         log.info("The registration of node with hostname ({}) and ip address ({}) has been requested",

@@ -14,7 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
 
 
@@ -151,8 +151,12 @@ public class HashService {
         if (nodes.size() == 1) return null;
 
         // check if the hash is lower than any node we have, if so, return the highest node
-        if (hash < nodes.firstKey()) {
-            return nodes.lastEntry().getValue();
+        try {
+            if (hash < nodes.firstKey()) {
+                return nodes.lastEntry().getValue();
+            }
+        } catch (NoSuchElementException e) {
+            log.warn("No nodes found, it's possible that all nodes shut down during the last second.");
         }
 
         int node = nodes.lowerKey(hash);
