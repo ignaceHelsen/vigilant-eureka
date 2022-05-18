@@ -11,10 +11,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,16 +24,23 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @Service
@@ -265,7 +270,8 @@ public class ReplicationService {
      * @param nodeAddress: The other node requesting its files.
      */
     public void transferAndDeleteFiles(String nodeAddress) {
-        MultiValueMap<String, Object> files = new LinkedMultiValueMap<>();
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        List<FileSystemResource> files = new ArrayList<>();
 
         File dir = new File(replicationConfig.getReplica());
         File[] directoryListing = dir.listFiles();
@@ -277,7 +283,7 @@ public class ReplicationService {
                 String destination = getDestination(child.getPath());
                 if (destination != null && destination.equalsIgnoreCase(nodeAddress)) {
                     // add file to list
-                    files.add("files", getFile(child.getPath()));
+                    files.add(new FileSystemResource(child));
                 }
             }
         }
@@ -285,8 +291,9 @@ public class ReplicationService {
         // transfer files to node
         if (!files.isEmpty()) {
             try {
+                builder.part("files", files);
                 // async method:
-                uploadMultipleFilesToNodeAndDelete(nodeAddress, files);
+                uploadMultipleFilesToNodeAndDelete(nodeAddress, builder.build());
             } catch (IOException | InterruptedException e) {
                 log.error("Unable to transfer file to node ({})", nodeAddress);
                 e.printStackTrace();
@@ -294,21 +301,26 @@ public class ReplicationService {
         }
     }
 
-    @Async
-    public void uploadMultipleFilesToNodeAndDelete(String nodeAddress, MultiValueMap<String, Object> files) throws IOException, InterruptedException {
-        WebClient.UriSpec<WebClient.RequestBodySpec> uriSpec = webClient.post();
-        String serverUrl = String.format("http://%s:%s/api/replication/transfer", nodeAddress namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
+    public void uploadMultipleFilesToNodeAndDelete(String nodeAddress, MultiValueMap<String, HttpEntity<?>> files) throws IOException, InterruptedException {
+        String serverUrl = String.format("http://%s:%s/api/replication/transfer", nodeAddress, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
 
-        WebClient.RequestBodySpec bodySpec = uriSpec.uri(serverUrl);
+        boolean spec = Boolean.TRUE.equals(webClient.post()
+                .uri(serverUrl)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(files))
+                .retrieve()
+                .bodyToMono(Boolean.class)
+                .block());
 
-        HttpHeaders headers = new HttpHeaders();
+        /*HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(files, headers);
-        webClient.post()
-        ResponseEntity<Boolean> response = restTemplate.exchange(serverUrl, requestEntity, Boolean.class);
 
-        if (Boolean.TRUE.equals(response.getBody()))
+        ResponseEntity<Boolean> response = restTemplate.exchange(serverUrl, requestEntity, Boolean.class);
+        */
+
+        if (spec)
             log.info("Succesfully transfered files {}", new ArrayList<>(files.toSingleValueMap().keySet()));
         else log.warn("Failed replicating files {}", new ArrayList<>(files.toSingleValueMap().keySet()));
 
@@ -331,16 +343,20 @@ public class ReplicationService {
      * Will look for files belonging to this node which are stored somewhere else.
      * The node will send a request to its own neighbours (next and previous) as well their respective next and previous nodes because those might still store replicas belonging to this node
      */
+    @Async
     public void lookForFilesAtNeighbouringNodes() {
         NextAndPreviousNode nodes = restService.getNextAndPrevious(networkService.getCurrentHash());
-        ResponseEntity<String> response;
+        String response;
 
         if (nodes.getIdNext() != networkService.getCurrentHash()) {
             // ask next node for files that should belong to us
             try {
-                response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%s",
-                        nodes.getIpNext(), namingServerConfig.getPort(), networkConfig.getHostName()), String.class);
-            } catch (RestClientException rce) {
+                Future<String> request = CompletableFuture.supplyAsync(() -> restTemplate.getForObject(String.format("http://%s:%s/api/replication/move/%s",
+                        nodes.getIpNext(), namingServerConfig.getPort(), networkConfig.getHostName()), String.class));
+
+                response = request.get();
+            } catch (RestClientException | InterruptedException | ExecutionException rce) {
+                rce.printStackTrace();
                 log.warn("Connection refused to node {}", nodes.getIpNext());
             }
             // now do the same for the next-next neighbour because they might still store replicas that belong to us
@@ -351,9 +367,12 @@ public class ReplicationService {
                 log.info("Transfer: no next-next node found, not transferring files.");
             else {
                 try {
-                    response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%s",
-                            ipAddressNextNeighbour, namingServerConfig.getPort(), networkConfig.getHostName()), String.class);
-                } catch (RestClientException rce) {
+                    Future<String> request = CompletableFuture.supplyAsync(() -> restTemplate.getForObject(String.format("http://%s:%s/api/replication/move/%s",
+                            ipAddressNextNeighbour, namingServerConfig.getPort(), networkConfig.getHostName()), String.class));
+
+                    response = request.get();
+                } catch (RestClientException | InterruptedException | ExecutionException rce) {
+                    rce.printStackTrace();
                     log.warn("Connection refused to node {}", ipAddressNextNeighbour);
                 }
             }
@@ -362,9 +381,12 @@ public class ReplicationService {
         if (nodes.getIdPrevious() != networkService.getCurrentHash()) {
             // ask previous node for files that should belong to us
             try {
-                response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%s",
-                        nodes.getIpPrevious(), namingServerConfig.getPort(), networkConfig.getHostName()), String.class);
-            } catch (RestClientException rce) {
+                Future<String> request = CompletableFuture.supplyAsync(() -> restTemplate.getForObject(String.format("http://%s:%s/api/replication/move/%s",
+                        nodes.getIpPrevious(), namingServerConfig.getPort(), networkConfig.getHostName()), String.class));
+
+                response = request.get();
+            } catch (RestClientException | InterruptedException | ExecutionException rce) {
+                rce.printStackTrace();
                 log.warn("Connection refused to node {}", nodes.getIpPrevious());
             }
 
@@ -376,9 +398,12 @@ public class ReplicationService {
                 log.info("Transfer: no previous-previous node found, not transferring files.");
             else {
                 try {
-                    response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%s",
-                            ipAddressPreviousNeighbour, namingServerConfig.getPort(), networkConfig.getHostName()), String.class);
-                } catch (RestClientException rce) {
+                    Future<String> request = CompletableFuture.supplyAsync(() -> restTemplate.getForObject(String.format("http://%s:%s/api/replication/move/%s",
+                            ipAddressPreviousNeighbour, namingServerConfig.getPort(), networkConfig.getHostName()), String.class));
+
+                    response = request.get();
+                } catch (RestClientException | InterruptedException | ExecutionException rce) {
+                    rce.printStackTrace();
                     log.warn("Connection refused to node {}", ipAddressPreviousNeighbour);
                 }
             }

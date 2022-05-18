@@ -60,7 +60,7 @@ public class ReplicationController {
      * @param files: The files to store.
      * @return if transfer has started (async)
      */
-    @PostMapping(path = "/transfer", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    @PostMapping(path = "/transfer")
     public ResponseEntity<Boolean> transfer(@RequestPart("files") List<MultipartFile> files) {
         try {
             boolean success = replicationService.storeFiles(files, Action.REPLICATE);
