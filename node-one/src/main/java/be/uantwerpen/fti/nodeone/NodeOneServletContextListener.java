@@ -5,6 +5,7 @@ import be.uantwerpen.fti.nodeone.service.NetworkService;
 import be.uantwerpen.fti.nodeone.service.ReplicationService;
 import be.uantwerpen.fti.nodeone.service.TcpListener;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.ServletComponentScan;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -36,6 +37,7 @@ public class NodeOneServletContextListener
 
         replicationService.initializeReplication();
         replicationService.precheck(); // check if all needed directories for replication are present.
+        replicationService.lookForFilesAtNeighbouringNodes();
     }
 }
 

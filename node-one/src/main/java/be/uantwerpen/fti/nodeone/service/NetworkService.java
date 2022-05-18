@@ -146,4 +146,8 @@ public class NetworkService {
             nodeFailure(idPrevious);
         }
     }
+
+    public int getCurrentHash() {
+        return nodeStructure.getCurrentHash();
+    }
 }

@@ -12,7 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
 
 
@@ -141,5 +143,37 @@ public class HashService {
 
     public int mapSize() {
         return nodes.size();
+    }
+
+    public String getReplicationNode(int hash, int sourceNode) {
+        // we can't call registerFile to know if the sourcenode is the original holder of the file since files could have been stored to a node directly without passing the namingserver
+        // first check if node is the only node, we don't want to replicate to the same node where the file is locally stored
+        if (nodes.size() == 1) return null;
+
+        // check if the hash is lower than any node we have, if so, return the highest node
+        try {
+            if (hash < nodes.firstKey()) {
+                return nodes.lastEntry().getValue();
+            }
+        } catch (NoSuchElementException e) {
+            log.warn("No nodes found, it's possible that all nodes shut down during the last second.");
+        }
+
+        int node = nodes.lowerKey(hash);
+
+        // check if the replication node is the same as the source node's hash, if so, return the previous after that
+        if (node == sourceNode) {
+            Integer previousNodeKey = nodes.lowerKey(node);
+            if (previousNodeKey == null) {
+                // if there isn't any previous node, return highest
+                // but also check that this highest is not the same as the sourcenode as well
+                Map.Entry<Integer, String> highestEntry = nodes.lastEntry();
+                if (highestEntry.getKey() == sourceNode) return null;
+                return highestEntry.getValue();
+            }
+            return nodes.get(previousNodeKey);
+        }
+
+        return nodes.get(node);
     }
 }

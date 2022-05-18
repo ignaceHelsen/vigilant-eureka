@@ -23,27 +23,31 @@ public class MulticastListener {
     @Async
     public void listenForMulticast() {
         while (true) {
-            try {
-                byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                socket.receive(packet);
+            if (!socket.isClosed()) {
+                try {
+                    byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                    socket.receive(packet);
 
-                // calculate hash of the node that sent the multicast
-                String nodeName = new String(buffer, StandardCharsets.UTF_8);
-                // ignore if same node
-                if (nodeName.equals(networkConfig.getHostName())) continue;
+                    // calculate hash of the node that sent the multicast
+                    String nodeName = new String(buffer, StandardCharsets.UTF_8);
+                    // ignore if same node
+                    if (nodeName.equals(networkConfig.getHostName())) continue;
 
-                int nodeHash = hashCalculator.calculateHash(nodeName);
+                    int nodeHash = hashCalculator.calculateHash(nodeName);
 
-                int ownHash = hashCalculator.calculateHash(networkConfig.getHostName());
-                nodeStructure.setCurrentHash(ownHash);
+                    int ownHash = hashCalculator.calculateHash(networkConfig.getHostName());
+                    nodeStructure.setCurrentHash(ownHash);
 
-                if (nodeHash < ownHash) nodeStructure.setPreviousNode(nodeHash);
-                else if (nodeHash > ownHash) nodeStructure.setNextNode(nodeHash);
+                    if (nodeHash < ownHash) nodeStructure.setPreviousNode(nodeHash);
+                    else if (nodeHash > ownHash) nodeStructure.setNextNode(nodeHash);
 
-            } catch (IOException e) {
-                e.printStackTrace();
-                log.warn("Socket could not be read");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    log.warn("Socket could not be read");
+                }
+            } else {
+                log.warn("MulticastSocket has unexpectedly closed.");
             }
         }
     }
