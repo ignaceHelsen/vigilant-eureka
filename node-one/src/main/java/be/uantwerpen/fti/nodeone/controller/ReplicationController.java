@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class ReplicationController {
     @PostMapping(path = "/store")
     public ResponseEntity<Boolean> storeFile(@RequestParam("file") MultipartFile file) {
         try {
-            boolean success = replicationService.storeFile(file, Action.LOCAL);
+            boolean success = replicationService.storeFile(file, file, Action.LOCAL);
             if (success) return ResponseEntity.ok(true);
         } catch (IOException e) {
             log.warn("Error replicating file: {}", file.getName());
@@ -30,9 +31,9 @@ public class ReplicationController {
     }
 
     @PostMapping(path = "/replicate")
-    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file, MultipartFile logFile) {
         try {
-            boolean success = replicationService.storeFile(file, Action.REPLICATE);
+            boolean success = replicationService.storeFile(file, logFile, Action.REPLICATE);
             if (success) return ResponseEntity.ok(true);
         } catch (IOException e) {
             log.warn("Error replicating file: {}", file.getName());
@@ -58,9 +59,9 @@ public class ReplicationController {
      * @return success
      */
     @PostMapping(path = "transfer")
-    public ResponseEntity<Boolean> transfer(@RequestParam("files") List<MultipartFile> files) {
+    public ResponseEntity<Boolean> transfer(@RequestParam("files") List<MultipartFile> files, @RequestParam("logs") List<MultipartFile> logFiles) {
         try {
-            boolean success = replicationService.storeFiles(files, Action.REPLICATE);
+            boolean success = replicationService.storeFiles(files, logFiles, Action.REPLICATE);
             if (success) return ResponseEntity.ok(true);
         } catch (IOException e) {
             log.warn("Error transfering replication files.");
@@ -68,5 +69,10 @@ public class ReplicationController {
         }
 
         return ResponseEntity.badRequest().build();
+    }
+
+    @PutMapping(path = "/warnDeletedFiles")
+    public ResponseEntity<Boolean> warnDeletedFiles(@PathVariable String fileName) {
+        return ResponseEntity.ok(true);
     }
 }

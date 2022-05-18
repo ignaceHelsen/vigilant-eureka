@@ -53,7 +53,6 @@ public class ReplicationService {
     private final RestService restService;
     private final Gson gson;
     private final NetworkConfig networkConfig;
-    private final RestService restService;
     private final NetworkService networkService;
 
     public void initializeReplication() {
@@ -262,9 +261,12 @@ public class ReplicationService {
         return true;
     }
 
-    public boolean storeFiles(List<MultipartFile> files, Action action) throws IOException {
-        for (MultipartFile file : files) {
-            boolean success = storeFile(file, action);
+    public boolean storeFiles(List<MultipartFile> files, List<MultipartFile> logFiles, Action action) throws IOException {
+        if (files.size()!= logFiles.size()) {
+            throw new IllegalArgumentException("Files and logFiles have a different size");
+        }
+        for (int i=0; i < files.size(); i++) {
+            boolean success = storeFile(files.get(i), logFiles.get(i), action);
         }
 
         return true;
@@ -278,7 +280,15 @@ public class ReplicationService {
     public void transferAndDeleteFiles(String nodeAddress) {
         MultiValueMap<String, Object> files = new LinkedMultiValueMap<>();
 
-        File dir = new File(replicationConfig.getReplica());
+        replicationComponent.getReplicatedFiles().forEach(file -> {
+            String destination = getDestination(file.getPath());
+            if (destination != null && destination.equalsIgnoreCase(nodeAddress)) {
+                // add file to list
+                files.add("files", getFile(file.getPath()));
+                files.add("logFiles", getFile(file.getLogFile().getPath()));
+            }
+        });
+        /*File dir = new File(replicationConfig.getReplica());
         File[] directoryListing = dir.listFiles();
         if (directoryListing != null) {
             // ignore gitkeeps
@@ -291,7 +301,7 @@ public class ReplicationService {
                     files.add(child.getName(), getFile(child.getPath()));
                 }
             }
-        }
+        }*/
 
         // transfer files to node
         if (!files.isEmpty()) {
@@ -302,6 +312,7 @@ public class ReplicationService {
                 log.error("Unable to transfer file to node ({})", nodeAddress);
                 e.printStackTrace();
             }
+        }
     }
 
     @Async
@@ -351,7 +362,7 @@ public class ReplicationService {
             else response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%s",
                     ipAddressNextNeighbour, namingServerConfig.getPort(), networkConfig.getHostName()), String.class);
         } else log.info("No other nodes to transfer files from.");
-    }
+
         if (nodes.getIdPrevious() != networkService.getCurrentHash()) {
             // ask previous node for files that should belong to us
             response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%s",
@@ -365,6 +376,7 @@ public class ReplicationService {
             else response = restTemplate.getForEntity(String.format("http://%s:%s/api/replication/move/%s",
                     ipAddressPreviousNeighbour, namingServerConfig.getPort(), networkConfig.getHostName()), String.class);
         } else log.info("No other nodes to transfer files from.");
+    }
 
     public void shutdown() {
         // Find previous node -> Naming server
@@ -397,5 +409,4 @@ public class ReplicationService {
             restTemplate.put(serverUrl, Boolean.class);
         });
     }
-}
 }
