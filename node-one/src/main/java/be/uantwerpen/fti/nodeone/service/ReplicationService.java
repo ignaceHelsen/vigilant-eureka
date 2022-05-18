@@ -11,7 +11,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,6 +26,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,6 +51,7 @@ public class ReplicationService {
     private final NetworkConfig networkConfig;
     private final RestService restService;
     private final NetworkService networkService;
+    private final WebClient webClient;
 
     public void initializeReplication() {
         replicationComponent.initialize();
@@ -172,7 +177,7 @@ public class ReplicationService {
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
         String serverUrl = String.format("http://%s:%s/api/replication/replicate/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
-        RestTemplate restTemplate = new RestTemplate();
+
         try {
             ResponseEntity<Boolean> response = restTemplate.postForEntity(serverUrl, requestEntity, Boolean.class);
             if (Boolean.TRUE.equals(response.getBody())) log.info("Succesfully replicated file {}", path);
@@ -246,6 +251,7 @@ public class ReplicationService {
     }
 
     public boolean storeFiles(List<MultipartFile> files, Action action) throws IOException {
+        // List<FileSystemResource> resources = files.stream().flatMap(f -> f.toSingleValueMap()).collect(Collectors.toList())
         for (MultipartFile file : files) {
             boolean success = storeFile(file, action);
         }
@@ -281,7 +287,7 @@ public class ReplicationService {
             try {
                 // async method:
                 uploadMultipleFilesToNodeAndDelete(nodeAddress, files);
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 log.error("Unable to transfer file to node ({})", nodeAddress);
                 e.printStackTrace();
             }
@@ -289,14 +295,18 @@ public class ReplicationService {
     }
 
     @Async
-    public void uploadMultipleFilesToNodeAndDelete(String nodeAddress, MultiValueMap<String, Object> files) throws IOException {
+    public void uploadMultipleFilesToNodeAndDelete(String nodeAddress, MultiValueMap<String, Object> files) throws IOException, InterruptedException {
+        WebClient.UriSpec<WebClient.RequestBodySpec> uriSpec = webClient.post();
+        String serverUrl = String.format("http://%s:%s/api/replication/transfer", nodeAddress namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
+
+        WebClient.RequestBodySpec bodySpec = uriSpec.uri(serverUrl);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(files, headers);
-        String serverUrl = String.format("http://%s:%s/api/replication/transfer", nodeAddress, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Boolean> response = restTemplate.postForEntity(serverUrl, requestEntity, Boolean.class);
+        webClient.post()
+        ResponseEntity<Boolean> response = restTemplate.exchange(serverUrl, requestEntity, Boolean.class);
 
         if (Boolean.TRUE.equals(response.getBody()))
             log.info("Succesfully transfered files {}", new ArrayList<>(files.toSingleValueMap().keySet()));

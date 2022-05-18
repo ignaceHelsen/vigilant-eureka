@@ -4,11 +4,14 @@ import be.uantwerpen.fti.nodeone.domain.Action;
 import be.uantwerpen.fti.nodeone.service.ReplicationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -57,8 +60,8 @@ public class ReplicationController {
      * @param files: The files to store.
      * @return if transfer has started (async)
      */
-    @PostMapping(path = "/transfer")
-    public ResponseEntity<Boolean> transfer(@RequestParam("files") List<MultipartFile> files) {
+    @PostMapping(path = "/transfer", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<Boolean> transfer(@RequestPart("files") List<MultipartFile> files) {
         try {
             boolean success = replicationService.storeFiles(files, Action.REPLICATE);
             if (success) return ResponseEntity.ok(true);
