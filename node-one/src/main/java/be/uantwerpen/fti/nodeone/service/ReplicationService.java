@@ -193,7 +193,7 @@ public class ReplicationService {
                 // Also replicate it
                 FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
                 replicationComponent.addLocalFile(fileStruct);
-                replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
+
                 // Since the new file is stored locally, we can already replicate it
                 try {
                     String destination = getDestination(filePath);
