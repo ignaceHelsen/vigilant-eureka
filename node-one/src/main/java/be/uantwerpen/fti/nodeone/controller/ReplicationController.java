@@ -4,6 +4,7 @@ import be.uantwerpen.fti.nodeone.domain.Action;
 import be.uantwerpen.fti.nodeone.service.ReplicationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -46,30 +47,28 @@ public class ReplicationController {
     /**
      * Will search for replicas that are stored on this node but should be located in another node.
      * Called from another node.
+     *
      * @param destinationNode: The node that is asking for its replicas.
      * @return A True boolean indicating the transfer is in progress.
      */
     @GetMapping(path = "/move/{destinationNode}")
     public ResponseEntity<Boolean> move(@PathVariable String destinationNode) {
-        replicationService.transferAndDeleteFiles(destinationNode);
-        return ResponseEntity.ok(true);
+        boolean success = replicationService.transferAndDeleteFiles(destinationNode);
+        return ResponseEntity.ok(success);
     }
 
     /**
      * Endpoint where transferred files will arrive.
+     *
      * @param files: The files to store.
-     * @return if transfer has started (async)
+     * @return Boolean indicating if transfer has succeeded (async) OR String when storing one or more files has failed.
      */
     @PostMapping(path = "/transfer")
     public ResponseEntity<Boolean> transfer(@RequestPart("files") List<MultipartFile> files) {
-        try {
-            boolean success = replicationService.storeFiles(files, Action.REPLICATE);
-            if (success) return ResponseEntity.ok(true);
-        } catch (IOException e) {
-            log.warn("Error transfering replication files.");
-            e.printStackTrace();
-        }
+        boolean success = replicationService.storeFiles(files, Action.REPLICATE);
+        if (success) return ResponseEntity.ok(true);
 
+        log.warn("Error transfering replication files.");
         return ResponseEntity.badRequest().build();
     }
 }
