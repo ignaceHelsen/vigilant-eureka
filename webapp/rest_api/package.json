@@ -1,0 +1,12 @@
+{
+    "name": "rest_api",
+    "description": "Webapp to manage nodes",
+    "license": "MIT",
+    "version": "1.0.0",
+    "devDependencies": {
+        "json-server": "^0.16.1"
+    },
+    "scripts": {
+        "start": "json-server --watch missions.json"
+    }
+}

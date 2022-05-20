@@ -1,0 +1,70 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+body {
+    background-color: $mainBgColor;
+    color: #fff;
+    font-family: Whitney, Helvetica;
+    width: 100%;
+
+    a {
+        color: $mainFontColor
+    }
+    .missionLogo {
+        width: 50%;
+        height: auto;
+    }
+
+    .formMissions {
+        .row {
+            .col-6 {
+                @include hoverable(2)
+            }
+        }
+    }
+    
+    #tableSearch {
+        margin-top: 1rem;
+
+        tbody {
+            img {
+                width: 10%;
+                height: auto;
+            }
+
+            tr {
+                @include hoverable(2)
+            }
+        }
+    }
+
+    nav {
+        #navLogo {
+            max-width: 100%;
+            height: 50px;
+        }
+
+        #navbar-brand {
+            align-self: flex-start;
+        }
+    }
+}
+footer {
+    span {
+        color: $mainFontColor;
+        font-family: Whitney, Helvetica;
+        font-size: 1rem;
+        font-weight: 300;
+    }
+}
+
+@media (max-width: $layout-breakpoint-small) {
+    #tableSearch {
+        tbody {
+            img {
+                width: 100%;
+                height: auto;
+            }
+        }
+    }
+  }
