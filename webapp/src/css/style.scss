@@ -10,16 +10,26 @@ body {
     a {
         color: $mainFontColor
     }
-    .missionLogo {
+    .nodeLogo {
         width: 50%;
         height: auto;
     }
 
-    .formMissions {
+    .formNodes {
         .row {
             .col-6 {
                 @include hoverable(2)
             }
+        }
+    }
+
+    #formNodes {
+        #nodeId {
+            color: #e83e8c;
+        }
+
+        #nodeName {
+            color: #007bff;
         }
     }
     

@@ -2,17 +2,13 @@
 <html>
 
 <head>
-    <title>Missions to space!</title>
+    <title>Nodes</title>
 </head>
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
-        <a class="navbar-brand" href="#">
-            <img id="navLogo" alt="site icon">
-        </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
             aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <i class="fas fa-rocket"></i>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
@@ -34,18 +30,18 @@
         <header>
             <div class="jumbotron jumbotron-fluid bg-dark">
                 <div class="container">
-                    <h1 class="display-4">Missions to space!<i class="fas fa-rocket ml-5"></i></h1>
+                    <h1 class="display-4">Nodes</h1>
                 </div>
             </div>
         </header>
 
         <div class="container">
-            <div id="formMission" class="form-row align-items-center">
+            <div id="formNode" class="form-row align-items-center">
             </div>
         </div>
         <div class="container mt-5">
             <div class="form-row align-items-center">
-                <div id="formMissions" class="row">
+                <div id="formNodes" class="row">
 
                 </div>
             </div>
@@ -54,29 +50,12 @@
 
     <section id="new">
         <div class="container">
-            <h1 class="display-4">Missions to space!<i class="fas fa-rocket ml-5"></i></h1>
-            <form id="addMission" class="mt-5 mb-5">
+            <h1 class="display-4">Nodes<i class="fas fa-rocket ml-5"></i></h1>
+            <form id="addNode" class="mt-5 mb-5">
                 <div class="form-group">
                     <label for="name">Name</label>
                     <input class="form-control bg-dark border-dark text-light" id="name" type="text">
                     <span class="text-danger" id="nameValidation"></span>
-                </div>
-                <div class="form-group">
-                    <label for="crewSize">Crew size</label>
-                    <input class="form-control bg-dark border-dark text-light" id="crewSize" type="number">
-                    <span class="text-danger" id="crewSizeValidation"></span>
-                </div>
-
-                <div class="form-group">
-                    <label for="launchdate">Launch date</label>
-                    <input class="form-control bg-dark border-dark text-light" id="launchdate" type="date">
-                    <span class="text-danger" id="launchdateValidation"></span>
-                </div>
-
-                <div class="form-group">
-                    <label for="operator">Operator</label>
-                    <input class="form-control bg-dark border-dark text-light" id="operator" type="text">
-                    <span class="text-danger" id="operatorValidation"></span>
                 </div>
 
                 <span class="text-danger d-block" id="globalValidation"></span>
@@ -94,16 +73,13 @@
                 case:</label><input id="matchCase" type="checkbox" />
         </div>
 
-        <h4 class="ml-2">Aantal: <span id="count"></span></h4>
+        <h4 class="ml-2">Number: <span id="count"></span></h4>
         <table id="tableSearch" class="table table-striped table-dark mb-0">
             <thead>
                 <tr>
                     <th scope="col">#</th>
                     <th scope="col"></th>
                     <th scope="col">Name</th>
-                    <th scope="col">Crew size</th>
-                    <th scope="col">Launchdate</th>
-                    <th scope="col">Operator</th>
                 </tr>
             </thead>
             <tbody>
@@ -114,7 +90,7 @@
 </body>
 
 <footer class="footer text-center fixed-bottom text-muted bg-dark mt-4 p-2">
-    <span class="align-middle">Ignace Helsen - <i class="fa fa-envelope-o"></i>ignace.helsen@student.kdg.be</span>
+    <span class="align-middle"><i class="fa fa-envelope-o"></i>Group 5</span>
 </footer>
 
 </html>
