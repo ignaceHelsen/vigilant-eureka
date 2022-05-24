@@ -31,6 +31,7 @@
             <div class="jumbotron jumbotron-fluid bg-dark">
                 <div class="container">
                     <h1 class="display-4">Nodes</h1>
+                    <div id="namingServer"></div>
                 </div>
             </div>
         </header>
@@ -50,7 +51,7 @@
 
     <section id="new">
         <div class="container">
-            <h1 class="display-4">Nodes<i class="fas fa-rocket ml-5"></i></h1>
+            <h1 class="display-4">Nodes<i class="ml-5"></i></h1>
             <form id="addNode" class="mt-5 mb-5">
                 <div class="form-group">
                     <label for="name">Name</label>
@@ -78,8 +79,28 @@
             <thead>
                 <tr>
                     <th scope="col">#</th>
-                    <th scope="col"></th>
                     <th scope="col">Name</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+        <br>
+        <table id="localFiles" class="table table-striped table-dark">
+            <thead>
+                <tr>
+                    <th scope="col">Local files on this node</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+        <table id="replicaFiles" class="table table-striped table-dark">
+            <thead>
+                <tr>
+                    <th scope="col">Replica files on this node</th>
                 </tr>
             </thead>
             <tbody>

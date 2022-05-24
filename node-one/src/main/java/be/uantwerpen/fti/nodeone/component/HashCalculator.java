@@ -1,4 +1,4 @@
-package be.uantwerpen.fti.nodeone.service;
+package be.uantwerpen.fti.nodeone.component;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

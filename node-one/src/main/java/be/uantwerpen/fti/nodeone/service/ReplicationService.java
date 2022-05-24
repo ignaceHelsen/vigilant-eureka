@@ -1,5 +1,6 @@
 package be.uantwerpen.fti.nodeone.service;
 
+import be.uantwerpen.fti.nodeone.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;

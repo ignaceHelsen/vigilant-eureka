@@ -12,10 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.NoSuchElementException;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -175,5 +173,9 @@ public class HashService {
         }
 
         return nodes.get(node);
+    }
+
+    public Map<Integer, String> getAllNodes() {
+        return nodes;
     }
 }

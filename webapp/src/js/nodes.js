@@ -1,65 +1,43 @@
 import * as restClient from './restclient'
-import { BASE_NODES_URL } from './restclient'
+import { NAMING_SERVER_URL } from './restclient'
 import { Node } from './Node'
 
-export async function initialiseFirstNode() {
-    try {
-        let node = await restClient.getNode(1)
-        node = new Node(node)
-        showNode(node)
-    }
-    catch (e) {
-        console.log(e)
-    }
-}
+let nodes = [];
 
 export async function initialiseForm() {
     try {
         let json = await restClient.getNodes()
-        let nodes = []
-
+        
         for(let i in json)
             nodes.push(new Node(i,json[i]));
 
         showNodes(nodes)
         showNodesSearch(nodes)
+        showNamingServer();
     }
     catch (error) {
         showError('Node not found.')
     }
 }
 
-function showNode(node) {
-    if (node != undefined) {
-        const formNode = document.querySelector("#formnode");
-        formnformNodeode.innerHTML = ''
-        formNode.innerHTML +=
-            `
-            <div class="row">
-                <div class="col-md-3 col-sm-12 text-center">
-                    <h2 id="nodeId">${node.id}</h2>
-                </div>
-                <div class="col-md-3 col-sm-12 text-center">            
-                    <h2 id="nodeName">${node.name}</h2>
-                </div>
-            </div >
-            `
-    }
+function showNamingServer() {
+    // show naming server
+    const namingServer = document.querySelector('#namingServer')
+    namingServer.innerHTML = `<i class="text-success fa-solid fa-circle-check"></i><h1>Naming server</h1>`
 }
+
 
 function showNodes(nodes) {
     for (let i = 0; i < nodes.length; i++) {
         addNode(nodes[i])
     }
-
-    initialiseEventListeners()
 }
 
 function addNode(node) {
     const formNodes = document.querySelector('#formNodes');
     formNodes.innerHTML +=
         `
-        <div class="card bg-dark" col-sm-6 col-lg-3 col-xl-4 mb-5 mt-5">
+        <div class="card bg-dark">
             <div class="row">
             <div id="nodeId" class="col-12">
                 <h3 class="mt-2 text-center">${node.id}</h2>
@@ -71,41 +49,56 @@ function addNode(node) {
         </div>
       `
 }
-
-export function initialiseEventListeners() {
-    const images = document.getElementsByClassName('nodeLogo');
-
-    for (let i = 0; i < images.length; i++) {
-        images[i].addEventListener('click', showNodeById, false);
-    }
-}
-
-async function showNodeById(event) {
-    const id = (event.target.id)
+async function showFilesOfNode(event) {
+    const id = event.target.classList[0];
+    const node_uri = nodes.filter(n => n.id == id)[0].name;
 
     try {
-        let node = await restClient.getNode(id)
-        node = new Node(node)
+        let files = await restClient.getLocalFilesFromNode(node_uri)
+        showLocalFiles(files);
+    }
+    catch (e) {
+        showError('Node not found.')
+    }
 
-        showNode(node)
+    try {
+        let files = await restClient.getReplicatedFilesFromNode(node_uri)
+        showReplicaFiles(files);
     }
     catch (e) {
         showError('Node not found.')
     }
 }
 
-export async function filter(event) {
+function showLocalFiles(files) {
+    const element = document.querySelector('#localFiles')
+    const tbody = element.querySelector('tbody')
+    tbody.innerHTML = ''
+
+    files.forEach(f => {
+        tbody.innerHTML += `<tr>
+                                <th scope="row">${f}</th>
+                            </tr>`
+    })
+}
+
+function showReplicaFiles(files) {
+    const element = document.querySelector('#replicaFiles')
+    const tbody = element.querySelector('tbody')
+    tbody.innerHTML = ''
+
+    files.forEach(f => {
+        tbody.innerHTML += `<tr>
+                                <th scope="row">${f}</th>
+                            </tr>`
+    })
+}
+
+export function filter(event) {
     let text = document.querySelector('#filter').value
     let matchCase = document.querySelector('#matchCase')
 
     try {
-        let json = await restClient.getNodes()
-        let nodes = []
-
-        for(let i in json)
-            nodes.push(new Node(i,json[i]));
-
-
         let nodeList;
 
         if (text != null) {
@@ -125,7 +118,7 @@ export async function filter(event) {
 }
 
 function showNodesSearch(nodes) {
-    const tableSearch = document.querySelector('#tableSearch');
+    const tableSearch = document.querySelector('#tableSearch')
     const tbody = tableSearch.querySelector('tbody')
     tbody.innerHTML = ''
     for (let i = 0; i < nodes.length; i++) {
@@ -133,22 +126,33 @@ function showNodesSearch(nodes) {
     }
 
     document.querySelector('#count').innerHTML = nodes.length
+
+    initialiseEventListeners()
 }
 
 function addNodeToTable(node) {
-    const tableSearch = document.querySelector('#tableSearch');
+    const tableSearch = document.querySelector('#tableSearch')
     const tbody = tableSearch.querySelector('tbody')
     tbody.innerHTML +=
-        `<tr>
-            <th scope="row">${node.id}</th>
-            <td>${node.id}</td>
-            <td>${node.name}</td>
+        `<tr class="tableNode">
+            <th class="${node.id} scope="row">${node.id}</th>
+            <td class="${node.id} scope="row">${node.name}</td>
         </tr>
         `
 }
 
+function initialiseEventListeners() {
+    const nodes = document.getElementsByClassName('tableNode');
+
+    for (let i = 0; i < nodes.length; i++) {
+        nodes[i].addEventListener('click', showFilesOfNode, false);
+    }
+}
 
 export function showError(text) {
     const notFound = document.querySelector('#notFound');
     notFound.innerHTML = text
+    // remove naming server
+    const namingServer = document.querySelector('#namingServer')
+    namingServer.innerHTML = `<h1><i class="text-danger fa-solid fa-circle-check"></i>Naming server</h1>`
 }

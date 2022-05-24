@@ -1,4 +1,4 @@
-@mixin hoverable($factor: 2) {
+@mixin hoverable($factor: 1) {
     &:hover {
         font-size: 1em * $factor;
 
