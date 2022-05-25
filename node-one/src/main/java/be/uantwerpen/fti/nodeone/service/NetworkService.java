@@ -2,6 +2,7 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
@@ -150,5 +151,9 @@ public class NetworkService {
 
     public int getCurrentHash() {
         return nodeStructure.getCurrentHash();
+    }
+
+    public NodeStructureDto getConfig() {
+        return new NodeStructureDto(nodeStructure.getPreviousNode(), nodeStructure.getNextNode());
     }
 }

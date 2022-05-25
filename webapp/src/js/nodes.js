@@ -1,29 +1,47 @@
 import * as restClient from './restclient'
-import { NAMING_SERVER_URL } from './restclient'
 import { Node } from './Node'
 
 let nodes = [];
 
+let socket = new WebSocket('ws://localhost:5001/nodes')
+
 export async function initialiseForm() {
     try {
         let json = await restClient.getNodes()
-        
-        for(let i in json)
-            nodes.push(new Node(i,json[i]));
+
+        for (let i in json)
+            nodes.push(new Node(i, json[i]));
 
         showNodes(nodes)
         showNodesSearch(nodes)
         showNamingServer();
     }
     catch (error) {
+        namingServerOffline()
         showError('Node not found.')
     }
 }
 
+socket.onmessage = function (event) {
+    initialiseForm()
+}
+
+socket.onclose = function (event) {
+    if (event.wasClean) {
+        console.log('Connection successfully closed.')
+    } else {
+        console.log('Connection unexpectedly closed.')
+    }
+};
+
+socket.onerror = function (error) {
+    console.log(`Websocket error ${error}`)
+};
+
 function showNamingServer() {
     // show naming server
     const namingServer = document.querySelector('#namingServer')
-    namingServer.innerHTML = `<i class="text-success fa-solid fa-circle-check"></i><h1>Naming server</h1>`
+    namingServer.innerHTML = `<h1><i class="text-success fa fa-check-circle"></i> Naming server</h1>`
 }
 
 
@@ -39,17 +57,20 @@ function addNode(node) {
         `
         <div class="card bg-dark">
             <div class="row">
-            <div id="nodeId" class="col-12">
-                <h3 class="mt-2 text-center">${node.id}</h2>
-            </div>
-            <div id="nodeName" class="col-12">
-                <h3 class="mt-2 text-center">${node.name}</h2>
-            </div>
+                <div id="nodeId" class="col-12">
+                    <h3 class="mt-2 text-center text-success">${node.id}</h2>
+                </div>
+                <div id="nodeName" class="col-12">
+                    <h3 class="mt-2 text-center">${node.name}</h3>
+                </div>
+                <div id="shutdown" class="${node.id} col-12">
+                    <h3 class="mt-2 text-center"><i class="text-danger fa fa-stop-circle"></i></h3>
+                </div>
             </div>
         </div>
       `
 }
-async function showFilesOfNode(event) {
+async function showInfoOfNode(event) {
     const id = event.target.classList[0];
     const node_uri = nodes.filter(n => n.id == id)[0].name;
 
@@ -64,6 +85,14 @@ async function showFilesOfNode(event) {
     try {
         let files = await restClient.getReplicatedFilesFromNode(node_uri)
         showReplicaFiles(files);
+    }
+    catch (e) {
+        showError('Node not found.')
+    }
+
+    try {
+        let config = await restClient.getConfigFromNode(node_uri)
+        showConfig(config);
     }
     catch (e) {
         showError('Node not found.')
@@ -92,6 +121,22 @@ function showReplicaFiles(files) {
                                 <th scope="row">${f}</th>
                             </tr>`
     })
+}
+
+function showConfig(config) {
+    const element = document.querySelector('#config')
+    const tbody = element.querySelector('tbody')
+    tbody.innerHTML = `<div class="card bg-dark">
+                            <div class="row">
+                            <div class="col-12">
+                                <p class="mt-2">Next node: ${config.nextNode}</p>
+                            </div>
+                            <div class="col-12">
+                                <p class="mt-2">Previous node: ${config.previousNode}</p>
+                            </div>
+                            </div>
+                        </div>
+                    `
 }
 
 export function filter(event) {
@@ -145,14 +190,27 @@ function initialiseEventListeners() {
     const nodes = document.getElementsByClassName('tableNode');
 
     for (let i = 0; i < nodes.length; i++) {
-        nodes[i].addEventListener('click', showFilesOfNode, false);
+        nodes[i].addEventListener('click', showInfoOfNode, false)
     }
+
+    const node = document.querySelector('#shutdown')
+    node.addEventListener('click', shutdown, false)
+}
+
+async function shutdown(event) {
+    const id = event.target.classList[0];
+    const node_uri = nodes.filter(n => n.id == id)[0].name;
+
+    await restClient.shutdownNode(node_uri)
 }
 
 export function showError(text) {
     const notFound = document.querySelector('#notFound');
     notFound.innerHTML = text
+}
+
+function namingServerOffline() {
     // remove naming server
     const namingServer = document.querySelector('#namingServer')
-    namingServer.innerHTML = `<h1><i class="text-danger fa-solid fa-circle-check"></i>Naming server</h1>`
+    namingServer.innerHTML = `<h1><i class="text-danger fa fa-check-circle"></i> Naming server</h1>`
 }

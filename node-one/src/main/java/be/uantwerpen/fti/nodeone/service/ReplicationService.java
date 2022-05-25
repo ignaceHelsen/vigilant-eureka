@@ -12,7 +12,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,7 +31,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,7 +46,8 @@ import java.util.stream.Collectors;
 @EnableScheduling
 @AllArgsConstructor
 public class ReplicationService {
-    private final ReplicationComponent replicationComponent; // TODO persistence?
+    private final ReplicationComponent replicationComponent;
+    private final FileService fileService;
     private final NamingServerConfig namingServerConfig;
     private final RestTemplate restTemplate;
     private final HashCalculator hashCalculator;
@@ -90,59 +93,11 @@ public class ReplicationService {
     }
 
     /**
-     * Check if all needed directories for replication are present.
-     * Create when not present.
-     * <p>
-     * Directories to be checked:
-     * <ul>
-     *     <li>/storage</li>
-     *     <ul>
-     *         <li>/local</li>
-     *         <li>/replica</li>
-     *         <li>/log</li>
-     *     </ul>
-     * </ul>
+     * Will request the destination where a file should be replicated.
+     * @param path: The path of the file
+     * @return ip address of the location
      */
-    public void precheck() {
-        File localDir = new File("src/resources/storage/local");
-        File replicaDir = new File("src/resources/storage/replica");
-        File logDir = new File("src/resources/storage/log");
-
-        if (!localDir.exists()) {
-            log.info("Created local directory.");
-            try {
-                boolean created = localDir.mkdirs();
-
-                if (!created) log.warn("Failure while creating dir {}", localDir.getName());
-            } catch (SecurityException e) {
-                log.error("Unable to create storage/local directory. Security Exception");
-            }
-        }
-
-        if (!replicaDir.exists()) {
-            log.info("Created replica directory.");
-            try {
-                boolean created = replicaDir.mkdirs();
-
-                if (!created) log.warn("Failure while creating dir {}", replicaDir.getName());
-            } catch (SecurityException e) {
-                log.error("Unable to create storage/replica directory. Security Exception");
-            }
-        }
-
-        if (!logDir.exists()) {
-            log.info("Created log directory.");
-            try {
-                boolean created = logDir.mkdirs();
-
-                if (!created) log.warn("Failure while creating dir {}", logDir.getName());
-            } catch (SecurityException e) {
-                log.error("Unable to create storage/log directory. Security Exception");
-            }
-        }
-    }
-
-    private String getDestination(String path) throws RestClientException {
+    private String getDestination(String path) {
         String filename = Paths.get(path).getFileName().toString();
         // Ask naming server where we should replicate the file to
         try {
@@ -154,12 +109,11 @@ public class ReplicationService {
             log.warn("Naming server did not return node-response for replication of file: {}. This may indicate that only one node is running.", path);
             log.warn("Body: {}", notFound.getResponseBodyAsString());
             return null;
-
         }
     }
 
     /**
-     * Replication of a file.
+     * Will replicate a file to a destination node.
      *
      * @param path:        The path to the file.
      * @param destination: The destination node to replicate it to.
@@ -203,8 +157,6 @@ public class ReplicationService {
      * @return If storing didn't result in an error.
      */
     public boolean storeFile(MultipartFile file, Action action) throws IOException {
-        byte[] bytes;
-        bytes = file.getBytes();
         String path;
         if (action == Action.LOCAL) {
             path = String.format("%s/%s", replicationConfig.getLocal(), file.getOriginalFilename());
@@ -243,11 +195,12 @@ public class ReplicationService {
             replicationComponent.addReplicationFile(fileStruct);
         }
 
-        File outputFile = new File(path);
-        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-            fos.write(bytes);
+        try {
+            fileService.saveFile(file, path);
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error("Error while saving file");
         }
-
         return true;
     }
 
@@ -298,7 +251,7 @@ public class ReplicationService {
             try {
                 // async method:
                 uploadMultipleFilesToNode(nodeAddress, body);
-                deletefiles(filesToDelete);
+                fileService.deletefiles(filesToDelete);
             } catch (IOException | InterruptedException | SecurityException e) {
                 e.printStackTrace();
                 log.error("Unable to transfer file to node ({})", nodeAddress);
@@ -312,7 +265,7 @@ public class ReplicationService {
     public void uploadMultipleFilesToNode(String nodeAddress, MultiValueMap<String, Object> body) throws IOException, InterruptedException {
         String serverUrl = String.format("http://%s:%s/api/replication/transfer", nodeAddress, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
 
-        boolean spec = Boolean.TRUE.equals(webClient.post()
+        boolean success = Boolean.TRUE.equals(webClient.post()
                 .uri(serverUrl)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(body))
@@ -320,23 +273,10 @@ public class ReplicationService {
                 .bodyToMono(Boolean.class)
                 .block());
 
-        if (spec)
+        if (success)
             log.info("Succesfully transfered files {}", new ArrayList<>(body.toSingleValueMap().keySet()));
         else log.warn("Failed replicating files {}", new ArrayList<>(body.toSingleValueMap().keySet()));
 
-    }
-
-    private void deletefiles(List<File> files) throws SecurityException {
-        // now delete the file
-        files.forEach(f -> {
-            try {
-                f.delete();
-            } catch (SecurityException e) {
-                e.printStackTrace();
-                log.warn("Unable to delete file after transfer. File: {}", f.getName());
-                throw e;
-            }
-        });
     }
 
     /**

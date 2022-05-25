@@ -24,16 +24,6 @@ body {
         }
     }
 
-    #formNodes {
-        #nodeId {
-            color: #e83e8c;
-        }
-
-        #nodeName {
-            color: #007bff;
-        }
-    }
-    
     #tableSearch {
         margin-top: 1rem;
 
@@ -61,10 +51,12 @@ body {
     }
 
     #localFiles,
-    #replicaFiles {
+    #replicaFiles,
+    #config {
         font-size: small;
     }
 }
+
 footer {
     span {
         color: $mainFontColor;
@@ -83,4 +75,4 @@ footer {
             }
         }
     }
-  }
+}

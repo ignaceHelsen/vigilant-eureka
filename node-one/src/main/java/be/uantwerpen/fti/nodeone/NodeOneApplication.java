@@ -1,9 +1,6 @@
 package be.uantwerpen.fti.nodeone;
 
-import be.uantwerpen.fti.nodeone.service.MulticastListener;
-import be.uantwerpen.fti.nodeone.service.NetworkService;
-import be.uantwerpen.fti.nodeone.service.ReplicationService;
-import be.uantwerpen.fti.nodeone.service.TcpListener;
+import be.uantwerpen.fti.nodeone.service.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
@@ -22,9 +19,9 @@ public class NodeOneApplication {
 
     @Bean
     public ServletListenerRegistrationBean<ServletContextListener> servletListener(NetworkService networkService, TcpListener tcpListener,
-                                                                                   MulticastListener multicastListener, ReplicationService replicationService) {
+                                                                                   MulticastListener multicastListener, ReplicationService replicationService, FileService fileService) {
         ServletListenerRegistrationBean<ServletContextListener> srb = new ServletListenerRegistrationBean<>();
-        srb.setListener(new ExampleServletContextListener(networkService, tcpListener, multicastListener, replicationService));
+        srb.setListener(new ExampleServletContextListener(networkService, tcpListener, multicastListener, replicationService, fileService));
         return srb;
     }
 }

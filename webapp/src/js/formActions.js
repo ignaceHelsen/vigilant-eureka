@@ -1,4 +1,3 @@
-import { postNode } from "./restclient"
 import { Node } from './Node'
 
 export function checkFields() {

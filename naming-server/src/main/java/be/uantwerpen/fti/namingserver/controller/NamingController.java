@@ -10,6 +10,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.websocket.EncodeException;
+import javax.websocket.OnError;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.PathParam;
+import javax.websocket.server.ServerEndpoint;
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -17,8 +24,20 @@ import java.util.Map;
 @RequiredArgsConstructor
 @CrossOrigin
 @RequestMapping("/api/naming")
+@ServerEndpoint(value = "/nodes")
 public class NamingController {
     private final HashService hashService;
+    private Session session;
+
+    @OnOpen
+    public void onOpen(Session session) {
+        this.session = session;
+    }
+
+    @OnError
+    public void onError(Session session, Throwable throwable) {
+        log.warn("Error in connection with websocket.");
+    }
 
     @GetMapping("/registerFile/{filename}")
     public ResponseEntity<String> registerFile(@PathVariable String filename) {
@@ -47,6 +66,7 @@ public class NamingController {
         log.info("The registration of node with hostname ({}) and ip address ({}) has been requested",
                 registerDto.getHostname(), registerDto.getIpAddress());
         boolean success = hashService.registerNode(registerDto.getIpAddress(), registerDto.getHostname());
+        broadcast();
         return ResponseEntity.ok(success);
     }
 
@@ -54,6 +74,7 @@ public class NamingController {
     public ResponseEntity<Boolean> removeNode(@RequestBody RemoveNodeDto removeDto) {
         log.info("The removal of node with hostname ({}) has been requested", removeDto.getCurrentHash());
         hashService.removeNode(removeDto.getCurrentHash());
+        broadcast();
         return ResponseEntity.ok(true);
     }
 
@@ -85,5 +106,13 @@ public class NamingController {
     @GetMapping("/nodes/all")
     public ResponseEntity<Map<Integer, String>> getAllNodes() {
         return ResponseEntity.ok(hashService.getAllNodes());
+    }
+
+    private void broadcast() {
+        try {
+            session.getBasicRemote().sendText("update");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
