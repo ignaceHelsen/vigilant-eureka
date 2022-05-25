@@ -88,7 +88,7 @@ public class RestService {
 
     public NextAndPreviousNode getNextAndPrevious(int hash) {
         try {
-            ResponseEntity<NextAndPreviousNode> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%s",
+            ResponseEntity<NextAndPreviousNode> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%d",
                     namingServerConfig.getAddress(), namingServerConfig.getPort(), hash), NextAndPreviousNode.class);
             return response.getBody();
         } catch (HttpClientErrorException e) {
