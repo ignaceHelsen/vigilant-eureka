@@ -66,13 +66,8 @@ public class ReplicationController {
      */
     @PostMapping(path = "transfer")
     public ResponseEntity<Boolean> transfer(@RequestParam("files") List<MultipartFile> files, @RequestParam("logs") List<MultipartFile> logFiles) {
-        try {
-            boolean success = replicationService.storeFiles(files, logFiles, Action.REPLICATE);
-            if (success) return ResponseEntity.ok(true);
-        } catch (IOException e) {
-            log.warn("Error transfering replication files.");
-            e.printStackTrace();
-        }
+        boolean success = replicationService.storeFiles(files, logFiles, Action.REPLICATE);
+        if (success) return ResponseEntity.ok(true);
 
         return ResponseEntity.badRequest().build();
     }

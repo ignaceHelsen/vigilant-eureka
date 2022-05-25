@@ -295,16 +295,18 @@ public class ReplicationService {
      */
     public boolean transferAndDeleteFiles(String nodeAddress) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        List<File> filesToDelete = new ArrayList<>();
+        List<FileStructure> filesToDelete = new ArrayList<>();
 
         replicationComponent.getReplicatedFiles().forEach(file -> {
             String destination = getDestination(file.getPath());
             if (destination != null && destination.equalsIgnoreCase(nodeAddress)) {
                 // add file to list
-                files.add("files", getFile(file.getPath()));
-                files.add("logFiles", getFile(file.getLogFile().getPath()));
+                body.add("files", getFile(file.getPath()));
+                body.add("logFiles", getFile(file.getLogFile().getPath()));
+                filesToDelete.add(file);
             }
         });
+
         /*File dir = new File(replicationConfig.getReplica());
         File[] directoryListing = dir.listFiles();
         if (directoryListing != null) {
@@ -319,7 +321,7 @@ public class ReplicationService {
                     filesToDelete.add(child);
                 }
             }
-        }
+        }*/
 
         // transfer files to node
         if (!body.isEmpty()) {
@@ -354,14 +356,16 @@ public class ReplicationService {
 
     }
 
-    private void deletefiles(List<File> files) throws SecurityException {
+    private void deletefiles(List<FileStructure> files) throws SecurityException {
         // now delete the file
         files.forEach(f -> {
             try {
-                f.delete();
+                Paths.get(f.getPath()).toFile().delete();
+                Paths.get(f.getLogFile().getPath()).toFile().delete();
+                replicationComponent.getReplicatedFiles().remove(f);
             } catch (SecurityException e) {
                 e.printStackTrace();
-                log.warn("Unable to delete file after transfer. File: {}", f.getName());
+                log.warn("Unable to delete file after transfer. File: {}", f.getFileName());
                 throw e;
             }
         });
