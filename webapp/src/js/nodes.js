@@ -7,12 +7,12 @@ let socket = new WebSocket('ws://localhost:5001/nodes')
 
 export async function initialiseForm() {
     try {
+        restClient.startNode();
         let json = await restClient.getNodes()
 
         for (let i in json)
-            nodes.push(new Node(i, json[i]));
 
-        showNodes(nodes)
+            showNodes(nodes)
         showNodesSearch(nodes)
         showNamingServer();
     }

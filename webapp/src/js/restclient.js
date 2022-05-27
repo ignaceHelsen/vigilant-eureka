@@ -5,6 +5,26 @@ import { showError } from './nodes'
 // the uri to port translation since we're using ssh tunneling
 let nodesServerPort = { "host0.group5.6dist": "5051", "host1.group5.6dist": "5052", "host2.group5.6dist": "5053", "host3.group5.6dist": "5054", "host4.group5.6dist": "5055", "host5.group5.6dist": "5056" }
 
+export async function startNode() {
+  return await fetch("http://localhost:5056", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify("start")
+  })
+    .then((response) => {
+      if (!response.ok) {
+        showError("Unable to start new node.")
+      }
+      return response.json()
+    })
+    .catch((e) => {
+      console.error(e)
+      showError("Unable to access server.")
+    })
+}
+
 export async function getNode(id) {
   return await fetch(`${NAMING_SERVER_URL}/${id}`)
     .then((response) => {
