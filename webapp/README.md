@@ -1,6 +1,10 @@
 # About
 
 ## Usage
+First go into each node and run
+$ python3 listenAndStartJar.py
+
+Then run all ssh tunnels
 
 -   From the project directory enter the following commands:
 
@@ -21,3 +25,4 @@ $ npm start
 -   npm
 -   Bootstrap
 -   JQuery (exclusively for Bootstrap!)
+
