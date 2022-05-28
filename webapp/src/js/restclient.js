@@ -2,41 +2,25 @@
 const NAMING_SERVER_URL = 'http://localhost:5051/api/naming'
 import { showError } from './nodes'
 
+
 // the uri to port translation since we're using ssh tunneling
-let nodesServerPort = { "host0.group5.6dist": "5051", "host1.group5.6dist": "5052", "host2.group5.6dist": "5053", "host3.group5.6dist": "5054", "host4.group5.6dist": "5055", "host5.group5.6dist": "5056" }
+let nodesServerPort = { "host0.group5.6dist": "5050", "host1.group5.6dist": "5051", "host2.group5.6dist": "5052", "host3.group5.6dist": "5053", "host4.group5.6dist": "5054"}
+let startupServerPort = { "host1.group5.6dist": "5055", "host2.group5.6dist": "5056", "host3.group5.6dist": "5057", "host4.group5.6dist": "5058"}
 
-export async function startNode() {
-  return await fetch("http://localhost:5056", {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify("start")
+export async function startNode(nodeUri) {
+  let port = startupServerPort[nodeUri]
+
+  return await fetch(`http://localhost:${port}/start`)
+  .then((response) => {
+    if (!response.ok) {
+      showError("Unable to start node.")
+    }
+    return response.json()
   })
-    .then((response) => {
-      if (!response.ok) {
-        showError("Unable to start new node.")
-      }
-      return response.json()
-    })
-    .catch((e) => {
-      console.error(e)
-      showError("Unable to access server.")
-    })
-}
-
-export async function getNode(id) {
-  return await fetch(`${NAMING_SERVER_URL}/${id}`)
-    .then((response) => {
-      if (!response.ok) {
-        showError("Unable to access node.")
-      }
-      return response.json()
-    })
-    .catch((e) => {
-      console.error(e)
-      showError("Unable to access server.")
-    })
+  .catch((e) => {
+    console.error(e)
+    showError("Unable to access server.")
+  })
 }
 
 export async function getNodes() {

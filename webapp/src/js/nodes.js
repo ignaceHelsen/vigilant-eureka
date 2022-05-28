@@ -3,11 +3,10 @@ import { Node } from './Node'
 
 let nodes = [];
 
-let socket = new WebSocket('ws://localhost:5001/nodes')
+//let socket = new WebSocket('ws://localhost:5001/nodes')
 
 export async function initialiseForm() {
     try {
-        restClient.startNode();
         let json = await restClient.getNodes()
 
         for (let i in json)
@@ -22,7 +21,7 @@ export async function initialiseForm() {
     }
 }
 
-socket.onmessage = function (event) {
+/*socket.onmessage = function (event) {
     initialiseForm()
 }
 
@@ -36,7 +35,7 @@ socket.onclose = function (event) {
 
 socket.onerror = function (error) {
     console.log(`Websocket error ${error}`)
-};
+};*/
 
 function showNamingServer() {
     // show naming server
@@ -213,4 +212,9 @@ function namingServerOffline() {
     // remove naming server
     const namingServer = document.querySelector('#namingServer')
     namingServer.innerHTML = `<h1><i class="text-danger fa fa-check-circle"></i> Naming server</h1>`
+}
+
+export function startNode() {
+    let uri = document.querySelector('#hostName').value
+    restClient.startNode(uri);
 }

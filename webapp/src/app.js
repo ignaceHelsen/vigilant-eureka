@@ -1,6 +1,5 @@
 import 'bootstrap'
-import './js/restclient'
-import { initialiseForm, filter } from './js/nodes'
+import { initialiseForm, filter, startNode } from './js/nodes'
 import * as navActions from './js/navActions'
 import { checkFields } from './js/formActions'
 
@@ -25,6 +24,6 @@ async function init() {
 }
 
 // form actions
-document.querySelector('#addNode').addEventListener('submit', checkFields, false)
+document.querySelector('#addNode').addEventListener('submit', startNode, false)
 document.querySelector('#filter').addEventListener('input', filter, false)
 document.querySelector('#matchCase').addEventListener('input', filter, false)
