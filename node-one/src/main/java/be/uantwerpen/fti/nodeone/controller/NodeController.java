@@ -3,6 +3,7 @@ package be.uantwerpen.fti.nodeone.controller;
 import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
+import be.uantwerpen.fti.nodeone.service.FileService;
 import be.uantwerpen.fti.nodeone.service.NetworkService;
 import be.uantwerpen.fti.nodeone.service.ShutdownService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/files")
 public class NodeController {
     private final ShutdownService shutdownService;
+    private final FileService fileService;
+    private final NetworkService networkService;
 
     private final ReplicationComponent replicationComponent;
 

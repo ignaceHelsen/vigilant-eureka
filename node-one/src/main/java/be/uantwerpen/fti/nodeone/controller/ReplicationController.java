@@ -53,6 +53,7 @@ public class ReplicationController {
      * @param destinationNode: The node that is asking for its replicas.
      * @return A True boolean indicating the transfer is in progress.
      */
+    // TODO: change to be a PUT endpoint
     @GetMapping(path = "/move/{destinationNode}")
     public ResponseEntity<Boolean> move(@PathVariable String destinationNode) {
         boolean success = replicationService.transferAndDeleteFiles(destinationNode);

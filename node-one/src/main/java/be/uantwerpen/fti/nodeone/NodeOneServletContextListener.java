@@ -1,9 +1,6 @@
 package be.uantwerpen.fti.nodeone;
 
-import be.uantwerpen.fti.nodeone.service.MulticastListener;
-import be.uantwerpen.fti.nodeone.service.NetworkService;
-import be.uantwerpen.fti.nodeone.service.ReplicationService;
-import be.uantwerpen.fti.nodeone.service.TcpListener;
+import be.uantwerpen.fti.nodeone.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +20,6 @@ public class NodeOneServletContextListener
     private final MulticastListener multicastListener;
     private final ReplicationService replicationService;
     private final FileService fileService;
-    private final ReplicationService replicationService;
 
     @Override
     public void contextDestroyed(ServletContextEvent event) {

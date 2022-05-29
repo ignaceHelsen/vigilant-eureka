@@ -1,4 +1,3 @@
-
 package be.uantwerpen.fti.nodeone;
 
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
@@ -71,4 +70,3 @@ public class RestTest {
         assertTrue(ipAddress.isReachable(5000), "Host not reachable");
     }
 }
-

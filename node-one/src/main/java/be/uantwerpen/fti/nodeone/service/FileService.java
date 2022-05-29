@@ -2,6 +2,7 @@ package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
+import be.uantwerpen.fti.nodeone.domain.ReplicationStructure;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -82,14 +83,14 @@ public class FileService {
         }
     }
 
-    public void deletefiles(List<File> files) throws SecurityException {
+    public void deletefiles(List<FileStructure> files) throws SecurityException {
         // now delete the file
         files.forEach(f -> {
             try {
-                f.delete();
+                new File(f.getPath()).delete();
             } catch (SecurityException e) {
                 e.printStackTrace();
-                log.warn("Unable to delete file after transfer. File: {}", f.getName());
+                log.warn("Unable to delete file after transfer. File: {}", f.getFileName());
                 throw e;
             }
         });

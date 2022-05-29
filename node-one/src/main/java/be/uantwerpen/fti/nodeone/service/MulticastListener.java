@@ -1,6 +1,5 @@
 package be.uantwerpen.fti.nodeone.service;
 
-import be.uantwerpen.fti.nodeone.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
@@ -10,7 +9,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.MulticastSocket;
 import java.nio.charset.StandardCharsets;
 
 @Service

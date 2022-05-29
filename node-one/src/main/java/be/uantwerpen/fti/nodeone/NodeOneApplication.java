@@ -1,9 +1,6 @@
 package be.uantwerpen.fti.nodeone;
 
-import be.uantwerpen.fti.nodeone.service.MulticastListener;
-import be.uantwerpen.fti.nodeone.service.NetworkService;
-import be.uantwerpen.fti.nodeone.service.ReplicationService;
-import be.uantwerpen.fti.nodeone.service.TcpListener;
+import be.uantwerpen.fti.nodeone.service.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.springframework.boot.SpringApplication;

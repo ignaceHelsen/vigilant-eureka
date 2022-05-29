@@ -160,6 +160,7 @@ public class ReplicationService {
      */
     public boolean storeFile(MultipartFile file, MultipartFile logFile, Action action) throws IOException {
         String logPath = replicationComponent.createLogPath(file.getOriginalFilename());
+        String filePath;
         if (action == Action.LOCAL) {
             filePath = replicationComponent.createFilePath(file.getOriginalFilename());
             log.info("Saving to {}", filePath);
@@ -193,7 +194,7 @@ public class ReplicationService {
             }
         } else {
             filePath = replicationComponent.createFilePath(file.getOriginalFilename());
-            log.info("Replicating to {}", path);
+            log.info("Replicating to {}", filePath);
 
             FileStructure fileStructure = new FileStructure(filePath, file.getOriginalFilename(), true,
                     replicationComponent.loadLog(file.getOriginalFilename()).orElse(new LogStructure(replicationComponent.createLogPath(file.getOriginalFilename()))));
@@ -203,7 +204,7 @@ public class ReplicationService {
         }
 
         try {
-            fileService.saveFile(file, path);
+            fileService.saveFile(file, filePath);
         } catch (IOException e) {
             e.printStackTrace();
             log.error("Error while saving file");
@@ -221,10 +222,10 @@ public class ReplicationService {
      */
 
     public boolean storeFiles(List<MultipartFile> files, List<MultipartFile> logFiles, Action action) {
-        if (files.size()!= logFiles.size()) {
+        if (files.size() != logFiles.size()) {
             throw new IllegalArgumentException("Files and logFiles have a different size");
         }
-        for (int i=0; i < files.size(); i++) {
+        for (int i = 0; i < files.size(); i++) {
             try {
                 boolean success = storeFile(files.get(i), logFiles.get(i), action);
             } catch (IOException e) {
@@ -233,6 +234,7 @@ public class ReplicationService {
             }
         }
         return true;
+    }
 
     /**
      * Will search for replica files that should belong to another node.
@@ -273,7 +275,6 @@ public class ReplicationService {
     public void uploadMultipleFilesToNode(String nodeAddress, MultiValueMap<String, Object> body) throws IOException, InterruptedException {
         String serverUrl = String.format("http://%s:%s/api/replication/transfer", nodeAddress, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
 
-        boolean spec = Boolean.TRUE.equals(webClient.post()
         boolean success = Boolean.TRUE.equals(webClient.post()
                 .uri(serverUrl)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -353,7 +354,7 @@ public class ReplicationService {
             restTemplate.put(serverUrl, Boolean.class);
         });
         log.info("Deleting stored files");
-        deleteFiles(new ArrayList<>(replicationComponent.getLocalFiles()));
-        deleteFiles(new ArrayList<>(replicationComponent.getReplicatedFiles()));
+        fileService.deletefiles(new ArrayList<>(replicationComponent.getLocalFiles()));
+        fileService.deletefiles(new ArrayList<>(replicationComponent.getReplicatedFiles()));
     }
 }
