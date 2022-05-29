@@ -34,12 +34,6 @@ public class RestTest {
     @Autowired
     RestTemplate restTemplate;
 
-
-    @Test
-    public void pls() {
-        System.out.println();
-    }
-
     @Test
     public void requestAndPingIp() throws IOException {
         String ip = restService.requestNodeIp("test.txt");
