@@ -12,8 +12,13 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.NoSuchElementException;
+import java.util.TreeMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 @Service
@@ -21,10 +26,16 @@ import java.util.stream.Collectors;
 public class HashService {
     private NavigableMap<Integer, String> nodes;
     private final MapConfig mapConfig;
+    private final ReadWriteLock lock;
+    private final Lock readLock;
+    private final Lock writeLock;
 
     public HashService(MapConfig mapConfig) {
         this.mapConfig = mapConfig;
         nodes = new TreeMap<>();
+        lock= new ReentrantReadWriteLock();
+        readLock = lock.readLock();
+        writeLock = lock.writeLock();
         readMapFromFile();
     }
 
@@ -33,49 +44,64 @@ public class HashService {
     }
 
     public String registerFile(String filename) {
-        int hash = calculateHash(filename); // e.g. 18
-        // now decide where to register the file
+        try {
+            readLock.lock();
+            int hash = calculateHash(filename); // e.g. 18
+            // now decide where to register the file
 
-        // check if lowest hash of the nodes is higher than the calculated hash
-        if (nodes.isEmpty()) return null;
+            // check if lowest hash of the nodes is higher than the calculated hash
+            if (nodes.isEmpty()) return null;
 
-        int lowestKey = nodes.firstKey();
-        if (lowestKey > hash) {
-            return nodes.get(nodes.lastKey()); // return the highest node
+            int lowestKey = nodes.firstKey();
+            if (lowestKey > hash) {
+                return nodes.get(nodes.lastKey()); // return the highest node
+            }
+
+            int keyOfClosestAndLowerNode = nodes.floorKey(hash);
+            return nodes.get(keyOfClosestAndLowerNode); // dns  name
         }
-
-        int keyOfClosestAndLowerNode = nodes.floorKey(hash);
-        return nodes.get(keyOfClosestAndLowerNode); // dns  name
+        finally {
+            readLock.lock();
+        }
     }
 
     public boolean registerNode(String ipAddress, String hostname) {
-        int hash = calculateHash(hostname);
-        if (nodes.containsKey(hash)) {
-            log.info("Node with hostname ({}) and ip address ({}) is already in the map", hostname, ipAddress);
-            return false;
+        try {
+            writeLock.lock();
+            int hash = calculateHash(hostname);
+            if (nodes.containsKey(hash)) {
+                log.info("Node with hostname ({}) and ip address ({}) is already in the map", hostname, ipAddress);
+                return false;
+            }
+
+            nodes.put(calculateHash(hostname), ipAddress);
+            updateMap();
+            log.info("Node with hostname ({}) and ip address ({}) has been added to the map", hostname, ipAddress);
+
+            return true;
         }
-
-        nodes.put(calculateHash(hostname), ipAddress);
-        updateMap();
-        log.info("Node with hostname ({}) and ip address ({}) has been added to the map", hostname, ipAddress);
-
-        return true;
-    }
-
-    public void removeNode(String hostname) {
-        int hash = calculateHash(hostname);
-        removeNode(hash);
+        finally {
+            writeLock.unlock();
+        }
     }
 
     public void removeNode(int currentHash) {
-        nodes.remove(currentHash);
-        updateMap();
-        log.info("Node with hostname ({}) has been removed from the map", currentHash);
+        try {
+            writeLock.lock();
+            nodes.remove(currentHash);
+            updateMap();
+            log.info("Node with hostname ({}) has been removed from the map", currentHash);
+        }
+        finally {
+            writeLock.lock();
+        }
+
 
     }
 
     private void readMapFromFile() {
         try {
+            writeLock.lock();
             BufferedReader reader = new BufferedReader(new FileReader(mapConfig.getFilename()));
             Gson gson = new Gson();
             var map = gson.fromJson(reader, TreeMap.class);
@@ -95,87 +121,149 @@ public class HashService {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        finally {
+            writeLock.unlock();
+        }
 
     }
 
     private void updateMap() {
-        Gson gson = new Gson();
-        String json = gson.toJson(nodes);
         try {
-            Path path = Paths.get(mapConfig.getFilename());
-            File file = new File(mapConfig.getFilename());
+            writeLock.lock();
+            Gson gson = new Gson();
+            String json = gson.toJson(nodes);
+            try {
+                Path path = Paths.get(mapConfig.getFilename());
+                File file = new File(mapConfig.getFilename());
 
-            if (!file.exists()) {
-                file.createNewFile();
+                if (!file.exists()) {
+                    file.createNewFile();
+                }
+
+                Files.write(path, json.getBytes(StandardCharsets.UTF_8));
+            } catch (NoSuchFileException e) {
+                log.error("Could not find nodes.json.");
+            } catch (IOException e) {
+                log.error("Unable to create or find nodes.json.");
             }
-
-            Files.write(path, json.getBytes(StandardCharsets.UTF_8));
-        } catch (NoSuchFileException e) {
-            log.error("Could not find nodes.json.");
-        } catch (IOException e) {
-            log.error("Unable to create or find nodes.json.");
         }
+        finally {
+            writeLock.unlock();
+        }
+
     }
 
     public String getAddressWithKey(int key) {
-        return nodes.get(key);
+        try {
+            readLock.lock();
+            return nodes.get(key);
+        }
+        finally {
+            readLock.unlock();
+        }
     }
 
     public int getNext(int currentHash) {
-        Integer hash = nodes.higherKey(currentHash);
-        if (hash == null) return currentHash;
-        return hash;
+        try {
+            readLock.lock();
+            int highestKey = nodes.lastKey();
+            if (highestKey <= currentHash) {
+                return nodes.firstKey(); // return the lowest node
+            }
+            return nodes.higherKey(currentHash);
+        }
+        catch (NullPointerException e) {
+            return currentHash;
+        }
+        finally {
+            readLock.unlock();
+        }
     }
 
     public int getPrevious(int currentHash) {
-        Integer hash = nodes.lowerKey(currentHash);
-        if (hash == null) return currentHash;
-        return hash;
+        try {
+            readLock.lock();
+            int lowestKey = nodes.firstKey();
+            if (lowestKey >= currentHash) {
+                return nodes.lastKey(); // return the highest node
+            }
+            return nodes.lowerKey(currentHash);
+        }
+        catch (NullPointerException e) {
+            return currentHash;
+        }
+        finally {
+            readLock.unlock();
+        }
     }
 
     public NextAndPreviousDto getNextAndPrevious(int currentHash) {
-        int idNext = getNext(currentHash);
-        int idPrevious = getPrevious(currentHash);
-        return new NextAndPreviousDto(idNext, getAddressWithKey(idNext), idPrevious, getAddressWithKey(idPrevious));
+        try {
+            readLock.lock();
+            int idNext = getNext(currentHash);
+            int idPrevious = getPrevious(currentHash);
+            return new NextAndPreviousDto(idNext, getAddressWithKey(idNext), idPrevious, getAddressWithKey(idPrevious));
+        }
+        finally {
+            readLock.unlock();
+        }
     }
 
     public int mapSize() {
-        return nodes.size();
+        try {
+            readLock.lock();
+            return nodes.size();
+        }
+        finally {
+            readLock.unlock();
+        }
     }
 
     public String getReplicationNode(int hash, int sourceNode) {
-        // we can't call registerFile to know if the sourcenode is the original holder of the file since files could have been stored to a node directly without passing the namingserver
-        // first check if node is the only node, we don't want to replicate to the same node where the file is locally stored
-        if (nodes.size() == 1) return null;
-
-        // check if the hash is lower than any node we have, if so, return the highest node
         try {
-            if (hash < nodes.firstKey()) {
-                return nodes.lastEntry().getValue();
+            readLock.lock();
+            // we can't call registerFile to know if the sourcenode is the original holder of the file since files could have been stored to a node directly without passing the namingserver
+            // first check if node is the only node, we don't want to replicate to the same node where the file is locally stored
+            if (nodes.size() == 1) return null;
+
+            // check if the hash is lower than any node we have, if so, return the highest node
+            try {
+                if (hash < nodes.firstKey() && nodes.lastKey() != sourceNode) {
+                    return nodes.lastEntry().getValue();
+                }
+            } catch (NoSuchElementException e) {
+                log.warn("No nodes found, it's possible that all nodes shut down during the last second.");
             }
-        } catch (NoSuchElementException e) {
-            log.warn("No nodes found, it's possible that all nodes shut down during the last second.");
-        }
 
-        int node = nodes.lowerKey(hash);
+            int node = nodes.lowerKey(hash);
 
-        // check if the replication node is the same as the source node's hash, if so, return the previous after that
-        if (node == sourceNode) {
-            Integer previousNodeKey = nodes.lowerKey(node);
-            if (previousNodeKey == null) {
-                // if there isn't any previous node, return highest
-                // but also check that this highest is not the same as the sourcenode as well
-                Map.Entry<Integer, String> highestEntry = nodes.lastEntry();
-                if (highestEntry.getKey() == sourceNode) return null;
-                return highestEntry.getValue();
+            // check if the replication node is the same as the source node's hash, if so, return the previous after that
+            if (node == sourceNode) {
+                Integer previousNodeKey = nodes.lowerKey(node);
+                if (previousNodeKey == null) {
+                    // if there isn't any previous node, return highest
+                    // but also check that this highest is not the same as the sourcenode as well
+                    Map.Entry<Integer, String> highestEntry = nodes.lastEntry();
+                    if (highestEntry.getKey() == sourceNode) return null;
+                    return highestEntry.getValue();
+                }
+                return nodes.get(previousNodeKey);
             }
-            return nodes.get(previousNodeKey);
-        }
 
-        return nodes.get(node);
+            return nodes.get(node);
+        }
+        finally {
+            readLock.unlock();
+        }
     }
 
     public Map<Integer, String> getAllNodes() {
-        return nodes;
+        try {
+            readLock.lock();
+            return nodes;
+        }
+        finally {
+            readLock.unlock();
+        }
     }
 }

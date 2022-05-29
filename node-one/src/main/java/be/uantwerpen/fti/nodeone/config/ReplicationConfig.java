@@ -14,6 +14,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 public class ReplicationConfig {
     private String local;
     private String replica;
+    private String log;
+    private String storage;
 }
 
 

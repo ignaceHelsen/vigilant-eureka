@@ -27,6 +27,6 @@ public class NetworkConfig {
 
     @Bean
     public NodeStructure nodeStructure(HashCalculator hashCalculator) {
-        return new NodeStructure(0, hashCalculator.calculateHash(hostName), 0);
+        return new NodeStructure(hashCalculator.calculateHash(hostName), hashCalculator.calculateHash(hostName), hashCalculator.calculateHash(hostName));
     }
 }

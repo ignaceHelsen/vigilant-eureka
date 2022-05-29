@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 import javax.websocket.EncodeException;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
@@ -101,6 +103,17 @@ public class NamingController {
             return new ResponseEntity<>("No node found.", HttpStatus.NOT_FOUND);
         }
         return ResponseEntity.ok(destination);
+    }
+
+    @GetMapping("/getPreviousNode/{hashValue}")
+    public ResponseEntity<Integer> getPreviousNode(@PathVariable int hashValue) {
+        log.info("Hash value of the previous node of node {} has been requested.", hashValue);
+        int previousNode = hashService.getPrevious(hashValue);
+        if (previousNode == 0) {
+            log.info("No previous node found.");
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(previousNode);
     }
 
     @GetMapping("/nodes/all")

@@ -11,6 +11,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@CrossOrigin
 @RequestMapping("/api/replication")
 public class ReplicationController {
     private final ReplicationService replicationService;
@@ -25,7 +27,7 @@ public class ReplicationController {
     @PostMapping(path = "/store")
     public ResponseEntity<Boolean> storeFile(@RequestParam("file") MultipartFile file) {
         try {
-            boolean success = replicationService.storeFile(file, Action.LOCAL);
+            boolean success = replicationService.storeFile(file, file, Action.LOCAL);
             if (success) return ResponseEntity.ok(true);
         } catch (IOException e) {
             log.warn("Error replicating file: {}", file.getName());
@@ -34,9 +36,9 @@ public class ReplicationController {
     }
 
     @PostMapping(path = "/replicate")
-    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file, @RequestParam("logFile") MultipartFile logFile) {
         try {
-            boolean success = replicationService.storeFile(file, Action.REPLICATE);
+            boolean success = replicationService.storeFile(file, logFile, Action.REPLICATE);
             if (success) return ResponseEntity.ok(true);
         } catch (IOException e) {
             log.warn("Error replicating file: {}", file.getName());
@@ -63,12 +65,17 @@ public class ReplicationController {
      * @param files: The files to store.
      * @return Boolean indicating if transfer has succeeded (async) OR String when storing one or more files has failed.
      */
-    @PostMapping(path = "/transfer")
-    public ResponseEntity<Boolean> transfer(@RequestPart("files") List<MultipartFile> files) {
-        boolean success = replicationService.storeFiles(files, Action.REPLICATE);
+    @PostMapping(path = "transfer")
+    public ResponseEntity<Boolean> transfer(@RequestParam("files") List<MultipartFile> files, @RequestParam("logFiles") List<MultipartFile> logFiles) {
+        boolean success = replicationService.storeFiles(files, logFiles, Action.REPLICATE);
         if (success) return ResponseEntity.ok(true);
-
         log.warn("Error transfering replication files.");
         return ResponseEntity.badRequest().build();
+    }
+
+    @PutMapping(path = "/warnDeletedFiles")
+    public ResponseEntity<Boolean> warnDeletedFiles(@PathVariable String fileName) {
+        // No action taken at the moment
+        return ResponseEntity.ok(true);
     }
 }

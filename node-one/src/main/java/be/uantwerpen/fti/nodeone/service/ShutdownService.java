@@ -1,5 +1,4 @@
 package be.uantwerpen.fti.nodeone.service;
-
 import lombok.AllArgsConstructor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
