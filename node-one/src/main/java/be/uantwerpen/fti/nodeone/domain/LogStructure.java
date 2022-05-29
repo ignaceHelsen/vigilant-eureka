@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,11 +24,11 @@ public class LogStructure {
     }
 
     public void registerDownload(){
-        this.downloads.add(new Download(LocalDate.now()));
+        this.downloads.add(new Download(LocalDateTime.now()));
     }
 
     public void registerOwner(int hashValue) {
-        this.fileOwners.add(new Owner(hashValue, LocalDate.now()));
+        this.fileOwners.add(new Owner(hashValue, LocalDateTime.now()));
     }
 
     public Owner getOwner(int index) {
@@ -39,13 +40,13 @@ public class LogStructure {
     @AllArgsConstructor
     public static class Owner {
         private int hashValue;
-        private LocalDate timeStamp;
+        private LocalDateTime timeStamp;
 
         public int getHashValue() {
             return hashValue;
         }
 
-        public LocalDate getTimeStamp() {
+        public LocalDateTime getTimeStamp() {
             return timeStamp;
         }
     }
@@ -54,6 +55,6 @@ public class LogStructure {
     @Setter
     @AllArgsConstructor
     public static class Download {
-        private LocalDate timeStamp;
+        private LocalDateTime timeStamp;
     }
 }

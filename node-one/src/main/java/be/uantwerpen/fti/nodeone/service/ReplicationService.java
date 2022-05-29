@@ -31,17 +31,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -64,7 +60,7 @@ public class ReplicationService {
         replicationComponent.initialize();
     }
 
-    @Scheduled(initialDelay = 10 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
+    @Scheduled(initialDelay = 20 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
     public void startReplication() {
         replicationComponent.lookForNewFiles();
 
@@ -182,7 +178,7 @@ public class ReplicationService {
 
         if (path == null) log.warn("Path of file has returned null");
         body.add("file", getFile(path));
-        body.add("log", getFile(logPath));
+        body.add("logFile", getFile(logPath));
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
         String serverUrl = String.format("http://%s:%s/api/replication/replicate/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
@@ -214,12 +210,14 @@ public class ReplicationService {
         byte[] bytes;
         bytes = file.getBytes();
         String filePath;
-        String logPath = replicationComponent.createLogPath(logFile.getOriginalFilename());
+        String logPath = replicationComponent.createLogPath(file.getOriginalFilename());
         if (action == Action.LOCAL) {
             filePath = replicationComponent.createFilePath(file.getOriginalFilename());
             log.info("Saving to {}", filePath);
             // Also replicate it
             FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
+            replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
+            fileStruct.getLogFile().registerOwner(nodeStructure.getCurrentHash());
             replicationComponent.addLocalFile(fileStruct);
 
             // Since the new file is stored locally, we can already replicate it
@@ -254,6 +252,7 @@ public class ReplicationService {
             FileStructure fileStructure = new FileStructure(filePath, file.getOriginalFilename(), true,
                     replicationComponent.loadLog(file.getOriginalFilename()).orElse(new LogStructure(replicationComponent.createLogPath(file.getOriginalFilename()))));
             replicationComponent.addReplicatedFile(fileStructure);
+            fileStructure.getLogFile().registerOwner(nodeStructure.getCurrentHash());
             replicationComponent.saveLog(fileStructure.getLogFile(), file.getOriginalFilename());
 
             log.info("Replicating to {}", filePath);
@@ -294,6 +293,7 @@ public class ReplicationService {
      * @param nodeAddress: The other node requesting its files.
      */
     public boolean transferAndDeleteFiles(String nodeAddress) {
+        log.info("Looking for files to transfer to node({})", nodeAddress);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         List<FileStructure> filesToDelete = new ArrayList<>();
 
@@ -307,28 +307,12 @@ public class ReplicationService {
             }
         });
 
-        /*File dir = new File(replicationConfig.getReplica());
-        File[] directoryListing = dir.listFiles();
-        if (directoryListing != null) {
-            // ignore gitkeeps
-            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
-                // search for replicas
-                // go to naming server to ask which node should have this file, if the response is the same as the node, it should be added to the list
-                String destination = getDestination(child.getPath());
-                if (destination != null && destination.equalsIgnoreCase(nodeAddress)) {
-                    // add file to list
-                    body.add("files", new FileSystemResource(child));
-                    filesToDelete.add(child);
-                }
-            }
-        }*/
-
         // transfer files to node
         if (!body.isEmpty()) {
             try {
                 // async method:
                 uploadMultipleFilesToNode(nodeAddress, body);
-                deletefiles(filesToDelete);
+                deleteFiles(filesToDelete);
             } catch (IOException | InterruptedException | SecurityException e) {
                 e.printStackTrace();
                 log.error("Unable to transfer file to node ({})", nodeAddress);
@@ -356,7 +340,7 @@ public class ReplicationService {
 
     }
 
-    private void deletefiles(List<FileStructure> files) throws SecurityException {
+    private void deleteFiles(List<FileStructure> files) throws SecurityException {
         // now delete the file
         files.forEach(f -> {
             try {
@@ -379,34 +363,6 @@ public class ReplicationService {
     public void lookForFilesAtNeighbouringNodes() {
         NextAndPreviousNode nodes = restService.getNextAndPrevious(networkService.getCurrentHash());
 
-        if (nodes.getIdNext() != networkService.getCurrentHash()) {
-            // ask next node for files that should belong to us
-            try {
-                CompletableFuture.supplyAsync(() -> restTemplate.getForObject(String.format("http://%s:%s/api/replication/move/%s",
-                        nodes.getIpNext(), namingServerConfig.getPort(), networkConfig.getHostName()), String.class)).get();
-
-            } catch (RestClientException | InterruptedException | ExecutionException rce) {
-                rce.printStackTrace();
-                log.warn("Connection refused to node {}", nodes.getIpNext());
-            }
-            // now do the same for the next-next neighbour because they might still store replicas that belong to us
-            NextAndPreviousNode neighboursOfNextNode = restService.getNextAndPrevious(nodes.getIdNext());
-            String ipAddressNextNeighbour = neighboursOfNextNode.getIpNext();
-
-            if (ipAddressNextNeighbour == null || neighboursOfNextNode.getIdNext() == networkService.getCurrentHash() || neighboursOfNextNode.getIdNext() == nodes.getIdNext()) // only send when the next node of my next node is not myself, and don't go to the same node again...
-                log.info("Transfer: no next-next node found, not transferring files.");
-            else {
-                try {
-                    CompletableFuture.supplyAsync(() -> restTemplate.getForObject(String.format("http://%s:%s/api/replication/move/%s",
-                            ipAddressNextNeighbour, namingServerConfig.getPort(), networkConfig.getHostName()), String.class)).get();
-
-                } catch (RestClientException | InterruptedException | ExecutionException rce) {
-                    rce.printStackTrace();
-                    log.warn("Connection refused to node {}", ipAddressNextNeighbour);
-                }
-            }
-        } else log.info("No other nodes to transfer files from.");
-
         if (nodes.getIdPrevious() != networkService.getCurrentHash()) {
             // ask previous node for files that should belong to us
             try {
@@ -419,7 +375,7 @@ public class ReplicationService {
             }
 
             // now do the same for the next-next neighbour because they might still store replicas that belong to us
-            NextAndPreviousNode neighboursOfPreviousNode = restService.getNextAndPrevious(nodes.getIdNext());
+            NextAndPreviousNode neighboursOfPreviousNode = restService.getNextAndPrevious(nodes.getIdPrevious());
             String ipAddressPreviousNeighbour = neighboursOfPreviousNode.getIpPrevious();
 
             if (ipAddressPreviousNeighbour == null || neighboursOfPreviousNode.getIdPrevious() == networkService.getCurrentHash() || neighboursOfPreviousNode.getIdPrevious() == nodes.getIdPrevious()) // only send when the previous node of my previous node is not myself. and don't go to the same node again...
@@ -438,24 +394,19 @@ public class ReplicationService {
     }
 
     public void shutdown() {
-        // Find previous node -> Naming server
-        int previousNode = nodeStructure.getPreviousNode();//restService.getPreviousNode(nodeStructure.getCurrentHash());
-        String previousIp = restService.requestNodeIpWithHashValue(previousNode);
-        //replicate(?, restService.requestNodeIpWithHashValue(previousNode)));
-        // Edge case -> Previous previous
-        int secondPreviousNode = restService.getPreviousNode(nodeStructure.getPreviousNode());
-        String secondPreviousIp = restService.requestNodeIpWithHashValue(secondPreviousNode);
+        log.info("Transferring replicated files before shutdown");
+        NextAndPreviousNode nodes = restService.getNextAndPrevious(networkService.getCurrentHash());
+        NextAndPreviousNode neighboursOfPreviousNode = restService.getNextAndPrevious(nodes.getIdNext());
 
-        //replicate.(?,  restService.requestNodeIpWithHashValue(secondPreviousNode));
+
         // Send all replicated files
-        // Except not downloaded files
         replicationComponent.getReplicatedFiles().forEach(file -> {
             try {
-                if (previousNode != file.getLogFile().getOwner(0).getHashValue()){
-                    replicate(file.getPath(), previousIp, file.getLogFile().getPath());
+                if (nodes.getIdPrevious() != file.getLogFile().getOwner(0).getHashValue()){
+                    replicate(file.getPath(), nodes.getIpPrevious(), file.getLogFile().getPath());
                 }
-                else if (secondPreviousNode != nodeStructure.getCurrentHash()){
-                    replicate(file.getPath(), secondPreviousIp, file.getLogFile().getPath());
+                else if (neighboursOfPreviousNode.getIdPrevious() != nodeStructure.getCurrentHash()){
+                    replicate(file.getPath(), neighboursOfPreviousNode.getIpPrevious(), file.getLogFile().getPath());
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -463,9 +414,13 @@ public class ReplicationService {
         });
 
         // Send owner of own locals files warning
+        log.info("Warning file owners that the local file is deleted");
         replicationComponent.getReplicatedLocalFiles().forEach(file -> {
-            String serverUrl = String.format("http://%s:%s/api/replication/warnDeletedFiles/%s", getDestination(file.getFileName()), namingServerConfig.getPort(), file.getFileName()); // the namingserverconfig getPort is the same as our controller's port
+            String serverUrl = String.format("http://%s:%s/api/replication/warnDeletedFiles/%s", getDestination(file.getPath()), namingServerConfig.getPort(), file.getFileName()); // the namingserverconfig getPort is the same as our controller's port
             restTemplate.put(serverUrl, Boolean.class);
         });
+        log.info("Deleting stored files");
+        deleteFiles(new ArrayList<>(replicationComponent.getLocalFiles()));
+        deleteFiles(new ArrayList<>(replicationComponent.getReplicatedFiles()));
     }
 }

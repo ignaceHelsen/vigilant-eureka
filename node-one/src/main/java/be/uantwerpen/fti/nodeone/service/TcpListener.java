@@ -1,6 +1,7 @@
 package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import java.net.Socket;
 @AllArgsConstructor
 public class TcpListener {
     private final HashCalculator hashCalculator;
+    private final RestService restService;
     private final NodeStructure nodeStructure;
     private final NetworkConfig networkConfig;
 
@@ -30,8 +32,13 @@ public class TcpListener {
                         DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
                         int mapSize = inputStream.readInt();
                         if (mapSize == 1) {
-                            nodeStructure.setPreviousNode(hashCalculator.calculateHash(networkConfig.getHostName()));
-                            nodeStructure.setNextNode(hashCalculator.calculateHash(networkConfig.getHostName()));
+                            nodeStructure.setPreviousNode(nodeStructure.getCurrentHash());
+                            nodeStructure.setNextNode(nodeStructure.getCurrentHash());
+                        }
+                        else {
+                            NextAndPreviousNode nextAndPreviousNode = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
+                            nodeStructure.setNextNode(nextAndPreviousNode.getIdNext());
+                            nodeStructure.setPreviousNode(nextAndPreviousNode.getIdPrevious());
                         }
                         inputStream.close();
                         clientSocket.close();

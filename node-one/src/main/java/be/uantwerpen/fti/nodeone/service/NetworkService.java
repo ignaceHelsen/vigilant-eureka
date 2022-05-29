@@ -56,25 +56,26 @@ public class NetworkService {
     /**
      * Will periodically (30s) broadcast its presence to neighbouring nodes.
      */
-    @Scheduled(fixedRate = 30 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
+    @Scheduled(fixedRate = 60 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
     public void BroadcastPresence() {
-        log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d (0 means the current node is its own next node)", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
         // first go to naming server to get ip of previous and next node
         try {
             NextAndPreviousNode ipNodes = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
 
             if (ipNodes == null) log.warn("Node could not be found");
             else {
-
+                nodeStructure.setNextNode(ipNodes.getIdNext());
+                nodeStructure.setPreviousNode(ipNodes.getIdPrevious());
+                log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d ", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
                 // now send to our peers
                 if (ipNodes.getIdNext() != nodeStructure.getCurrentHash()) {
                     // send notification to next
-                    updateNode(ipNodes.getIpNext(), networkConfig.getUpdateNextSocketPort(), nodeStructure.getNextNode());
+                    updateNode(ipNodes.getIpNext(), networkConfig.getUpdateNextSocketPort(), ipNodes.getIdNext());
                 }
 
                 if (ipNodes.getIdPrevious() != nodeStructure.getCurrentHash()) {
                     // send notification to previous
-                    updateNode(ipNodes.getIpPrevious(), networkConfig.getUpdatePreviousSocketPort(), nodeStructure.getPreviousNode());
+                    updateNode(ipNodes.getIpPrevious(), networkConfig.getUpdatePreviousSocketPort(), ipNodes.getIdPrevious());
                 }
             }
         } catch(ResourceAccessException e) {
@@ -95,12 +96,15 @@ public class NetworkService {
     }
 
     public void nodeShutDown() {
+        NextAndPreviousNode nodes = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
+        nodeStructure.setNextNode(nodes.getIdNext());
+        nodeStructure.setPreviousNode(nodes.getIdPrevious());
         nodeShutDown(nodeStructure.getCurrentHash(), nodeStructure.getNextNode(), nodeStructure.getPreviousNode());
     }
 
 
     public void nodeShutDown(int currentHash, int nextNode, int previousNode) {
-        log.info("Node request to shut down, next and previous node will be updated.");
+        log.info("Updating next and previous nodes before shutdown");
         //Request ip with id next node namingservice (REST)
         String NextIp = restService.requestNodeIpWithHashValue(nextNode);
         //Send id previous to next node (TCP)
@@ -113,7 +117,7 @@ public class NetworkService {
     }
 
     public void nodeFailure(int hashNode) {
-        log.info("Failed to communicate with other nodes, next and previous node will be updated. Current node will be removed.");
+        log.info("Communication with node({}) failed, updating its neighbours", hashNode);
         NextAndPreviousNode nextAndPrevious = restService.getNextAndPrevious(hashNode);
         sendUpdateNext(nextAndPrevious.getIpNext(), nextAndPrevious.getIdNext(), nextAndPrevious.getIdPrevious());
         sendUpdatePrevious(nextAndPrevious.getIpPrevious(), nextAndPrevious.getIdPrevious(), nextAndPrevious.getIdNext());

@@ -19,10 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
@@ -74,27 +71,17 @@ public class ReplicationComponent {
         File[] directoryListing = dir.listFiles();
         if (directoryListing != null) {
             // ignore gitkeeps
-            Set<String> replicatedLocalPaths = replicatedLocalFiles.stream().map(FileStructure::getPath).collect(Collectors.toSet());
-            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep")) || !replicatedLocalPaths.contains(createFilePath(f.getName()))).collect(Collectors.toList())) {
+            List<String> replicatedLocalPaths = localFiles.stream().map(FileStructure::getPath).collect(Collectors.toList());
+            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep")) && replicatedLocalPaths.stream().noneMatch(path -> path.equals(f.getPath()))).collect(Collectors.toList())) {
                 // add to files (t's a set so no duplicates)
                 // load josn containing list of all files that have been replicated
                 // if current child is foundin this list, set replicated to true. otherwise set to false
                 FileStructure fileStructure = new FileStructure(child.getPath(), child.getName(), false, new LogStructure(createLogPath(child.getName())));
                 localFiles.add(fileStructure); // As new files are being found, these are of course not replicated yet so we set the boolean to false
+                fileStructure.getLogFile().registerOwner(nodeStructure.getCurrentHash());
                 saveLog(fileStructure.getLogFile(), child.getName());
             }
         }
-
-        /*dir = new File(replicationConfig.getReplica());
-        directoryListing = dir.listFiles();
-        if (directoryListing != null) {
-            // ignore gitkeeps
-            Set<String> replicatedPaths = replicatedFiles.stream().map(FileStructure::getPath).collect(Collectors.toSet());
-            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep")) || !replicatedPaths.contains(createFilePath(f.getName()))).collect(Collectors.toList())) {
-                // add to files
-                replicatedFiles.add(new FileStructure(child.getPath(), false, loadLog(child.getName()).orElse(new LogStructure(createLogPath(child.getName())))));
-            }
-        }*/
     }
 
     public String createLogPath(String fileName) {
@@ -125,7 +112,8 @@ public class ReplicationComponent {
         try  {
             Reader reader = Files.newBufferedReader(Paths.get(createLogPath(fileName)));
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            return Optional.of(gson.fromJson(reader, LogStructure.class));
+            LogStructure logStructure = gson.fromJson(reader, LogStructure.class);
+            return Optional.of(logStructure);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -150,6 +138,5 @@ public class ReplicationComponent {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        logStructure.registerOwner(nodeStructure.getCurrentHash());
     }
 }

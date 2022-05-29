@@ -19,6 +19,7 @@ import java.util.List;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@CrossOrigin
 @RequestMapping("/api/replication")
 public class ReplicationController {
     private final ReplicationService replicationService;
@@ -35,7 +36,7 @@ public class ReplicationController {
     }
 
     @PostMapping(path = "/replicate")
-    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file, MultipartFile logFile) {
+    public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file, @RequestParam("logFile") MultipartFile logFile) {
         try {
             boolean success = replicationService.storeFile(file, logFile, Action.REPLICATE);
             if (success) return ResponseEntity.ok(true);
@@ -65,7 +66,7 @@ public class ReplicationController {
      * @return Boolean indicating if transfer has succeeded (async) OR String when storing one or more files has failed.
      */
     @PostMapping(path = "transfer")
-    public ResponseEntity<Boolean> transfer(@RequestParam("files") List<MultipartFile> files, @RequestParam("logs") List<MultipartFile> logFiles) {
+    public ResponseEntity<Boolean> transfer(@RequestParam("files") List<MultipartFile> files, @RequestParam("logFiles") List<MultipartFile> logFiles) {
         boolean success = replicationService.storeFiles(files, logFiles, Action.REPLICATE);
         if (success) return ResponseEntity.ok(true);
 
@@ -74,6 +75,7 @@ public class ReplicationController {
 
     @PutMapping(path = "/warnDeletedFiles")
     public ResponseEntity<Boolean> warnDeletedFiles(@PathVariable String fileName) {
+        // No action taken at the moment
         return ResponseEntity.ok(true);
     }
 }
