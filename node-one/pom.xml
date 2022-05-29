@@ -12,7 +12,7 @@
 	<artifactId>node-one</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>node-one</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Distributed system with naming server and nodes</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
@@ -22,6 +22,15 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>commons-fileupload</groupId>
+			<artifactId>commons-fileupload</artifactId>
+			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -37,10 +46,17 @@
 			<artifactId>spring-boot-devtools</artifactId>
 			<version>2.6.6</version>
 		</dependency>
+
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-tx</artifactId>
-			<version>5.3.19</version>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.8.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
 		</dependency>
 
 	</dependencies>

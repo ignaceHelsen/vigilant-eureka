@@ -36,6 +36,7 @@ public class RestService {
         }
     }
 
+    @Deprecated
     public boolean registerNode(RegisterNodeRequest registerRequest) {
         log.info("Requesting node in naming server");
         try {
@@ -71,8 +72,9 @@ public class RestService {
 
     public String requestNodeIpWithHashValue(int hashValue) {
         log.info("Requesting ip address with hash value for file ({})", hashValue);
+        if (hashValue == 0) return null; // in some weird cases hashvalue can be 0
         try {
-            ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/registerfile/%d",
+            ResponseEntity<String> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/address/%d",
                     namingServerConfig.getAddress(), namingServerConfig.getPort(), hashValue), String.class);
             return response.getBody();
         } catch (HttpClientErrorException e) {
@@ -86,15 +88,29 @@ public class RestService {
 
     public NextAndPreviousNode getNextAndPrevious(int hash) {
         try {
-            ResponseEntity<NextAndPreviousNode> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%s",
+            ResponseEntity<NextAndPreviousNode> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getNextAndPrevious/%d",
                     namingServerConfig.getAddress(), namingServerConfig.getPort(), hash), NextAndPreviousNode.class);
             return response.getBody();
         } catch (HttpClientErrorException e) {
-            log.error("Client error occurred while requesting next and previous node from node with hostname {}", hash);
+            log.error("Client error occurred while requesting next and previous node from node with hash value {}", hash);
             return null;
         } catch (HttpServerErrorException e) {
-            log.error("Server error occurred while requesting next and previous node from node with hostname {}", hash);
+            log.error("Server error occurred while requesting next and previous node from node with hash value {}", hash);
             return null;
+        }
+    }
+
+    public int getPreviousNode(int hash) {
+        try {
+            ResponseEntity<Integer> response = restTemplate.getForEntity(String.format("http://%s:%s/api/naming/getPreviousNode/%d",
+                    namingServerConfig.getAddress(), namingServerConfig.getPort(), hash), Integer.class);
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            log.error("Client error occurred while requesting previous node from node with hash value {}", hash);
+            return 0;
+        } catch (HttpServerErrorException e) {
+            log.error("Server error occurred while requesting previous node from node with hash value {}", hash);
+            return 0;
         }
     }
 }

@@ -6,12 +6,16 @@ import be.uantwerpen.fti.namingserver.controller.dto.RemoveNodeDto;
 import be.uantwerpen.fti.namingserver.service.HashService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@CrossOrigin
 @RequestMapping("/api/naming")
 public class NamingController {
     private final HashService hashService;
@@ -27,17 +31,16 @@ public class NamingController {
         return ResponseEntity.ok(destination);
     }
 
-    @GetMapping("/registerFile/{hashValue}")
-    public ResponseEntity<String> registerFile(@PathVariable int hashValue) {
-        log.info("Ip address of node with hashValue ({}) has been requested", hashValue);
-        String destination = hashService.getAddressWithKey(hashValue);
+    @GetMapping("/address/{hash}")
+    public ResponseEntity<String> getAddressByHash(@PathVariable int hash) {
+        log.info("Ip address of node with hash ({}) has been requested", hash);
+        String destination = hashService.getAddressWithKey(hash);
         if (destination == null) {
             log.info("No node found.");
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(destination);
     }
-
 
     @PostMapping("/registerNode")
     public ResponseEntity<Boolean> registerNode(@RequestBody RegisterNodeDto registerDto) {
@@ -59,5 +62,39 @@ public class NamingController {
         log.info("The next and previous node of node {} has been requested", hash);
         NextAndPreviousDto nextAndPrevious = hashService.getNextAndPrevious(hash);
         return ResponseEntity.ok(nextAndPrevious);
+    }
+
+    /**
+     * Will search for a node that will store the filehash.
+     *
+     * @param hash:       The hash of the filename.
+     * @param sourceNode: The hash of the address of the requesting node.
+     * @return String representing the address of the destination node.
+     */
+    @GetMapping("/replicationDestination/{hash}/{sourceNode}")
+    public ResponseEntity<String> getReplicationDestination(@PathVariable int hash, @PathVariable int sourceNode) {
+        log.info("Request received for file replication (hash: {})", hash);
+        String destination = hashService.getReplicationNode(hash, sourceNode);
+        if (destination == null) {
+            log.info("No node found.");
+            return new ResponseEntity<>("No node found.", HttpStatus.NOT_FOUND);
+        }
+        return ResponseEntity.ok(destination);
+    }
+
+    @GetMapping("/getPreviousNode/{hashValue}")
+    public ResponseEntity<Integer> getPreviousNode(@PathVariable int hashValue) {
+        log.info("Hash value of the previous node of node {} has been requested.", hashValue);
+        int previousNode = hashService.getPrevious(hashValue);
+        if (previousNode == 0) {
+            log.info("No previous node found.");
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(previousNode);
+    }
+
+    @GetMapping("/nodes/all")
+    public ResponseEntity<Map<Integer, String>> getAllNodes() {
+        return ResponseEntity.ok(hashService.getAllNodes());
     }
 }
