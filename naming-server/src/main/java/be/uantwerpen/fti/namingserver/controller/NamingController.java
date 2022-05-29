@@ -10,9 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@CrossOrigin
 @RequestMapping("/api/naming")
 public class NamingController {
     private final HashService hashService;
@@ -88,5 +91,10 @@ public class NamingController {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(previousNode);
+    }
+
+    @GetMapping("/nodes/all")
+    public ResponseEntity<Map<Integer, String>> getAllNodes() {
+        return ResponseEntity.ok(hashService.getAllNodes());
     }
 }
