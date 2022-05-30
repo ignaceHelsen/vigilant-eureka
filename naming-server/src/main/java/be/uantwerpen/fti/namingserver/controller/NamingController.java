@@ -26,12 +26,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 @CrossOrigin
 @RequestMapping("/api/naming")
-@ServerEndpoint(value = "/nodes")
+//@ServerEndpoint(value = "/nodes")
 public class NamingController {
     private final HashService hashService;
     private Session session;
 
-    @OnOpen
+    /*@OnOpen
     public void onOpen(Session session) {
         this.session = session;
     }
@@ -39,7 +39,7 @@ public class NamingController {
     @OnError
     public void onError(Session session, Throwable throwable) {
         log.warn("Error in connection with websocket.");
-    }
+    }*/
 
     @GetMapping("/registerFile/{filename}")
     public ResponseEntity<String> registerFile(@PathVariable String filename) {
@@ -122,10 +122,10 @@ public class NamingController {
     }
 
     private void broadcast() {
-        try {
+        /*try {
             session.getBasicRemote().sendText("update");
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
     }
 }

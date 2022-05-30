@@ -1,7 +1,12 @@
 # About
 
 ## Usage
-First go into each node and run
+First run in node-one:
+$ mvn install
+
+Then upload the mvn jar to ~/ on each node and change the hostname override in each script (only the index)
+
+Then go into each node and run
 $ python3 listenAndStartJar.py
 
 Then run all ssh tunnels

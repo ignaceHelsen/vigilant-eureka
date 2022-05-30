@@ -33,7 +33,7 @@ public class HashService {
     public HashService(MapConfig mapConfig) {
         this.mapConfig = mapConfig;
         nodes = new TreeMap<>();
-        lock= new ReentrantReadWriteLock();
+        lock = new ReentrantReadWriteLock();
         readLock = lock.readLock();
         writeLock = lock.writeLock();
         readMapFromFile();
@@ -59,8 +59,7 @@ public class HashService {
 
             int keyOfClosestAndLowerNode = nodes.floorKey(hash);
             return nodes.get(keyOfClosestAndLowerNode); // dns  name
-        }
-        finally {
+        } finally {
             readLock.lock();
         }
     }
@@ -79,8 +78,7 @@ public class HashService {
             log.info("Node with hostname ({}) and ip address ({}) has been added to the map", hostname, ipAddress);
 
             return true;
-        }
-        finally {
+        } finally {
             writeLock.unlock();
         }
     }
@@ -91,8 +89,7 @@ public class HashService {
             nodes.remove(currentHash);
             updateMap();
             log.info("Node with hostname ({}) has been removed from the map", currentHash);
-        }
-        finally {
+        } finally {
             writeLock.lock();
         }
 
@@ -120,8 +117,7 @@ public class HashService {
             log.error("Could not find nodes.json file.");
         } catch (IOException e) {
             e.printStackTrace();
-        }
-        finally {
+        } finally {
             writeLock.unlock();
         }
 
@@ -146,8 +142,7 @@ public class HashService {
             } catch (IOException e) {
                 log.error("Unable to create or find nodes.json.");
             }
-        }
-        finally {
+        } finally {
             writeLock.unlock();
         }
 
@@ -157,8 +152,7 @@ public class HashService {
         try {
             readLock.lock();
             return nodes.get(key);
-        }
-        finally {
+        } finally {
             readLock.unlock();
         }
     }
@@ -171,11 +165,9 @@ public class HashService {
                 return nodes.firstKey(); // return the lowest node
             }
             return nodes.higherKey(currentHash);
-        }
-        catch (NullPointerException e) {
+        } catch (NullPointerException | NoSuchElementException e) {
             return currentHash;
-        }
-        finally {
+        } finally {
             readLock.unlock();
         }
     }
@@ -188,11 +180,9 @@ public class HashService {
                 return nodes.lastKey(); // return the highest node
             }
             return nodes.lowerKey(currentHash);
-        }
-        catch (NullPointerException e) {
+        } catch (NullPointerException | NoSuchElementException e) {
             return currentHash;
-        }
-        finally {
+        } finally {
             readLock.unlock();
         }
     }
@@ -203,8 +193,7 @@ public class HashService {
             int idNext = getNext(currentHash);
             int idPrevious = getPrevious(currentHash);
             return new NextAndPreviousDto(idNext, getAddressWithKey(idNext), idPrevious, getAddressWithKey(idPrevious));
-        }
-        finally {
+        } finally {
             readLock.unlock();
         }
     }
@@ -213,8 +202,7 @@ public class HashService {
         try {
             readLock.lock();
             return nodes.size();
-        }
-        finally {
+        } finally {
             readLock.unlock();
         }
     }
@@ -251,8 +239,7 @@ public class HashService {
             }
 
             return nodes.get(node);
-        }
-        finally {
+        } finally {
             readLock.unlock();
         }
     }
@@ -261,8 +248,7 @@ public class HashService {
         try {
             readLock.lock();
             return nodes;
-        }
-        finally {
+        } finally {
             readLock.unlock();
         }
     }

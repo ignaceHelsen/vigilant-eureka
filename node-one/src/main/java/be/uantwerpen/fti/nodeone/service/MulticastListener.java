@@ -1,6 +1,7 @@
 package be.uantwerpen.fti.nodeone.service;
 
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.config.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.AllArgsConstructor;
@@ -26,33 +27,36 @@ public class MulticastListener {
     @Async
     public void listenForMulticast() {
         while (true) {
-            try {
-                byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                socket.receive(packet);
+            if (socket.isClosed()) {
+                System.exit(0);
+            } else {
+                try {
+                    byte[] buffer = new byte[networkConfig.getHostName().getBytes().length];
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                    socket.receive(packet);
 
-                // calculate hash of the node that sent the multicast
-                String nodeName = new String(buffer, StandardCharsets.UTF_8);
-                // ignore if same node
-                if (nodeName.equals(networkConfig.getHostName())) continue;
+                    // calculate hash of the node that sent the multicast
+                    String nodeName = new String(buffer, StandardCharsets.UTF_8);
+                    // ignore if same node
+                    if (nodeName.equals(networkConfig.getHostName())) continue;
 
-                int nodeHash = hashCalculator.calculateHash(nodeName);
+                    int nodeHash = hashCalculator.calculateHash(nodeName);
 
-                int ownHash = hashCalculator.calculateHash(networkConfig.getHostName());
-                nodeStructure.setCurrentHash(ownHash);
+                    int ownHash = hashCalculator.calculateHash(networkConfig.getHostName());
+                    nodeStructure.setCurrentHash(ownHash);
 
-                NextAndPreviousNode nextAndPreviousNode = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
-                nodeStructure.setNextNode(nextAndPreviousNode.getIdNext());
-                nodeStructure.setPreviousNode(nextAndPreviousNode.getIdPrevious());
+                    NextAndPreviousNode nextAndPreviousNode = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
+                    nodeStructure.setNextNode(nextAndPreviousNode.getIdNext());
+                    nodeStructure.setPreviousNode(nextAndPreviousNode.getIdPrevious());
 
-               /* if (nodeHash < ownHash && nodeStructure.getPreviousNode() < nodeHash) nodeStructure.setPreviousNode(nodeHash);
+                /* if (nodeHash < ownHash && nodeStructure.getPreviousNode() < nodeHash) nodeStructure.setPreviousNode(nodeHash);
                 if (nodeHash > ownHash && nodeStructure.getNextNode() > nodeHash) nodeStructure.setNextNode(nodeHash);*/
 
-            } catch (IOException e) {
-                e.printStackTrace();
-                log.warn("Socket could not be read");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    log.warn("Socket could not be read");
+                }
             }
-
         }
     }
 }

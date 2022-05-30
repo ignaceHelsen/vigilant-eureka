@@ -1,6 +1,6 @@
 /* eslint-disable no-template-curly-in-string */
-const NAMING_SERVER_URL = 'http://localhost:5051/api/naming'
-import { showError } from './nodes'
+const NAMING_SERVER_URL = 'http://localhost:5050/api/naming'
+import { showError, namingServerOffline } from './nodes'
 
 
 // the uri to port translation since we're using ssh tunneling
@@ -33,6 +33,7 @@ export async function getNodes() {
     })
     .catch((e) => {
       console.error(e)
+      namingServerOffline()
       showError("Unable to access server.")
     })
 }
@@ -88,7 +89,7 @@ export async function getConfigFromNode(nodeUri) {
 export async function shutdownNode(nodeUri) {
   let port = nodesServerPort[nodeUri]
 
-  return await fetch(`http://localhost:${port}/api/shutdown`, {
+  return await fetch(`http://localhost:${port}/actuator/shutdown`, {
     method: 'POST'
   })
     .then((response) => {

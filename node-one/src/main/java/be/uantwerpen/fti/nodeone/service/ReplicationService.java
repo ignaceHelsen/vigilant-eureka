@@ -1,20 +1,20 @@
 package be.uantwerpen.fti.nodeone.service;
 
-import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
-import be.uantwerpen.fti.nodeone.domain.Action;
-import be.uantwerpen.fti.nodeone.domain.FileStructure;
-import be.uantwerpen.fti.nodeone.domain.LogStructure;
-import be.uantwerpen.fti.nodeone.domain.NodeStructure;
+import be.uantwerpen.fti.nodeone.config.component.HashCalculator;
+import be.uantwerpen.fti.nodeone.config.component.ReplicationComponent;
+import be.uantwerpen.fti.nodeone.domain.*;
 import com.google.gson.Gson;
-import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,8 +29,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,10 +47,8 @@ public class ReplicationService {
     private final RestTemplate restTemplate;
     private final FileService fileService;
     private final HashCalculator hashCalculator;
-    private final ReplicationConfig replicationConfig;
     private final NodeStructure nodeStructure;
     private final RestService restService;
-    private final Gson gson;
     private final NetworkConfig networkConfig;
     private final NetworkService networkService;
     private final WebClient webClient;
@@ -331,7 +327,6 @@ public class ReplicationService {
         log.info("Transferring replicated files before shutdown");
         NextAndPreviousNode nodes = restService.getNextAndPrevious(networkService.getCurrentHash());
         NextAndPreviousNode neighboursOfPreviousNode = restService.getNextAndPrevious(nodes.getIdNext());
-
 
         // Send all replicated files
         replicationComponent.getReplicatedFiles().forEach(file -> {

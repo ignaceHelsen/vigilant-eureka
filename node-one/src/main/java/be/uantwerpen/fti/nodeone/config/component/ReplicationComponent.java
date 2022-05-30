@@ -1,4 +1,4 @@
-package be.uantwerpen.fti.nodeone.component;
+package be.uantwerpen.fti.nodeone.config.component;
 
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;

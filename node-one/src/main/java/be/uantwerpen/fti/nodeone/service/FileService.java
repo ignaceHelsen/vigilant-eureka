@@ -1,8 +1,7 @@
 package be.uantwerpen.fti.nodeone.service;
 
-import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
+import be.uantwerpen.fti.nodeone.config.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
-import be.uantwerpen.fti.nodeone.domain.ReplicationStructure;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;

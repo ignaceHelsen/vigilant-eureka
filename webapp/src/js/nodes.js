@@ -7,16 +7,18 @@ let nodes = [];
 
 export async function initialiseForm() {
     try {
+        showNamingServer();
         let json = await restClient.getNodes()
 
         for (let i in json)
+            nodes.push(new Node(i, json[i]));
 
-            showNodes(nodes)
+        showNodes(nodes)
+            
         showNodesSearch(nodes)
         showNamingServer();
     }
     catch (error) {
-        namingServerOffline()
         showError('Node not found.')
     }
 }
@@ -62,8 +64,8 @@ function addNode(node) {
                 <div id="nodeName" class="col-12">
                     <h3 class="mt-2 text-center">${node.name}</h3>
                 </div>
-                <div id="shutdown" class="${node.id} col-12">
-                    <h3 class="mt-2 text-center"><i class="text-danger fa fa-stop-circle"></i></h3>
+                <div id="shutdown" class="col-12">
+                    <h3 class="mt-2 text-center"><i id=${node.id} class="text-danger fa fa-stop-circle"></i></h3>
                 </div>
             </div>
         </div>
@@ -197,8 +199,8 @@ function initialiseEventListeners() {
 }
 
 async function shutdown(event) {
-    const id = event.target.classList[0];
-    const node_uri = nodes.filter(n => n.id == id)[0].name;
+    const id = event.target.id
+    const node_uri = nodes.filter(n => n.id == id)[0].name
 
     await restClient.shutdownNode(node_uri)
 }
@@ -208,7 +210,7 @@ export function showError(text) {
     notFound.innerHTML = text
 }
 
-function namingServerOffline() {
+export function namingServerOffline() {
     // remove naming server
     const namingServer = document.querySelector('#namingServer')
     namingServer.innerHTML = `<h1><i class="text-danger fa fa-check-circle"></i> Naming server</h1>`
