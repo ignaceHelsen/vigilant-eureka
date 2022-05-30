@@ -21,10 +21,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -91,6 +88,7 @@ public class ReplicationService {
 
     /**
      * Will request the destination where a file should be replicated.
+     *
      * @param path: The path of the file
      * @return ip address of the location
      */
@@ -105,6 +103,9 @@ public class ReplicationService {
         } catch (HttpClientErrorException.NotFound notFound) {
             log.warn("Naming server did not return node-response for replication of file: {}. This may indicate that only one node is running.", path);
             log.warn("Body: {}", notFound.getResponseBodyAsString());
+            return null;
+        } catch (HttpServerErrorException | ResourceAccessException e) {
+            log.warn("Unable to access naming server.");
             return null;
         }
     }
@@ -163,7 +164,8 @@ public class ReplicationService {
             // Also replicate it
             FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
             replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
-            fileStruct.getLogFile().registerOwner(nodeStructure.getCurrentHash());            replicationComponent.addLocalFile(fileStruct);
+            fileStruct.getLogFile().registerOwner(nodeStructure.getCurrentHash());
+            replicationComponent.addLocalFile(fileStruct);
 
             // Since the new file is stored locally, we can already replicate it
             try {
@@ -210,10 +212,9 @@ public class ReplicationService {
     }
 
     /**
-     *
-     * @param files: The files to store locally
+     * @param files:    The files to store locally
      * @param logFiles: The logs that belong to this file
-     * @param action: To replicate or not to replicate
+     * @param action:   To replicate or not to replicate
      * @return True if all files have been successfully stored or false if one ore more have failed.
      */
 
@@ -293,7 +294,7 @@ public class ReplicationService {
     public void lookForFilesAtNeighbouringNodes() {
         NextAndPreviousNode nodes = restService.getNextAndPrevious(networkService.getCurrentHash());
 
-        if (nodes.getIdPrevious() != networkService.getCurrentHash()) {
+        if (nodes != null && nodes.getIdPrevious() != networkService.getCurrentHash()) {
             // ask previous node for files that should belong to us
             try {
                 CompletableFuture.supplyAsync(() -> restTemplate.getForObject(String.format("http://%s:%s/api/replication/move/%s",
@@ -331,10 +332,9 @@ public class ReplicationService {
         // Send all replicated files
         replicationComponent.getReplicatedFiles().forEach(file -> {
             try {
-                if (nodes.getIdPrevious() != file.getLogFile().getOwner(0).getHashValue()){
+                if (nodes.getIdPrevious() != file.getLogFile().getOwner(0).getHashValue()) {
                     replicate(file.getPath(), nodes.getIpPrevious(), file.getLogFile().getPath());
-                }
-                else if (neighboursOfPreviousNode.getIdPrevious() != nodeStructure.getCurrentHash()){
+                } else if (neighboursOfPreviousNode.getIdPrevious() != nodeStructure.getCurrentHash()) {
                     replicate(file.getPath(), neighboursOfPreviousNode.getIpPrevious(), file.getLogFile().getPath());
                 }
             } catch (IOException e) {
@@ -344,10 +344,12 @@ public class ReplicationService {
 
         // Send owner of own locals files warning
         log.info("Warning file owners that the local file is deleted");
-        replicationComponent.getReplicatedLocalFiles().forEach(file -> {
-            String serverUrl = String.format("http://%s:%s/api/replication/warnDeletedFiles/%s", getDestination(file.getPath()), namingServerConfig.getPort(), file.getFileName()); // the namingserverconfig getPort is the same as our controller's port
-            restTemplate.put(serverUrl, Boolean.class);
-        });
+        if (replicationComponent.getReplicatedLocalFiles() != null) {
+            replicationComponent.getReplicatedLocalFiles().forEach(file -> {
+                String serverUrl = String.format("http://%s:%s/api/replication/warnDeletedFiles/%s", getDestination(file.getPath()), namingServerConfig.getPort(), file.getFileName()); // the namingserverconfig getPort is the same as our controller's port
+                restTemplate.put(serverUrl, Boolean.class);
+            });
+        }
         log.info("Deleting stored files");
         fileService.deletefiles(new ArrayList<>(replicationComponent.getLocalFiles()));
         fileService.deletefiles(new ArrayList<>(replicationComponent.getReplicatedFiles()));

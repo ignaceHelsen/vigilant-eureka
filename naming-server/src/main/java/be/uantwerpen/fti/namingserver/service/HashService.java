@@ -239,6 +239,9 @@ public class HashService {
             }
 
             return nodes.get(node);
+        } catch (NullPointerException e) {
+            log.error("Unable to find node destination for replication.");
+            return null;
         } finally {
             readLock.unlock();
         }

@@ -3,6 +3,7 @@ package be.uantwerpen.fti.nodeone;
 import be.uantwerpen.fti.nodeone.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -26,12 +27,18 @@ public class NodeOneServletContextListener
         log.info("Node is shutting down");
         replicationService.shutdown();
         networkService.nodeShutDown();
+        multicastListener.setHasShutdown(true);
     }
 
     @Override
     public void contextInitialized(ServletContextEvent event) {
         tcpService.listenUnicastResponse();
-        multicastListener.listenForMulticast();
+
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setWaitForTasksToCompleteOnShutdown(false);
+        executor.setAwaitTerminationSeconds(5);
+        executor.initialize();
+        executor.execute(multicastListener::listenForMulticast);
 
         tcpService.listenForUpdateNext();
         tcpService.listenForUpdatePrevious();
@@ -47,6 +54,5 @@ public class NodeOneServletContextListener
 
     public void scheduleLookForFiles() {
         replicationService.lookForFilesAtNeighbouringNodes();
-
     }
 }

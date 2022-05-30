@@ -97,6 +97,9 @@ public class RestService {
         } catch (HttpServerErrorException e) {
             log.error("Server error occurred while requesting next and previous node from node with hash value {}", hash);
             return null;
+        } catch (Exception e) {
+            log.error("Unable to connect to naming server.");
+            return null;
         }
     }
 
