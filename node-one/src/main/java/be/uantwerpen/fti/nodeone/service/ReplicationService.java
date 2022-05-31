@@ -48,6 +48,7 @@ public class ReplicationService {
     private final NodeStructure nodeStructure;
     private final RestService restService;
     private final NetworkConfig networkConfig;
+    private final ReplicationConfig replicationConfig;
     private final NetworkService networkService;
     private final WebClient webClient;
 
@@ -371,11 +372,14 @@ public class ReplicationService {
         fileService.deletefiles(new ArrayList<>(replicationComponent.getReplicatedFiles()));
     }
 
-    public Boolean deleteReplica(String filePath) {
+    public Boolean deleteReplica(String fileName) {
         try {
-            fileService.deletefiles(List.of(new FileStructure(filePath, null, true, null)));
+            String filePath = String.format("%s/%s", replicationConfig.getReplica(), fileName);
+            String logPath = String.format("%s/%s.json", replicationConfig.getLog(), fileName);
+            FileStructure fileStructure = new FileStructure(filePath, null, true, new LogStructure(logPath, null, null));
+            fileService.deletefiles(List.of(fileStructure));
         } catch (Exception e) {
-            log.error("Error while deleting file {}.", filePath);
+            log.error("Error while deleting file {}.", fileName);
             return false;
         }
 

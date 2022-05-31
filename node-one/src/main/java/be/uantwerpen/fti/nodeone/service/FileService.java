@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class FileService {
     private final ReplicationComponent replicationComponent;
-    private final ReplicationConfig replicationConfig;
 
     public List<String> getAllLocalFiles() {
         return replicationComponent.getLocalFiles().stream().map(FileStructure::getPath).collect(Collectors.toList());
@@ -88,7 +87,14 @@ public class FileService {
         // now delete the file
         files.forEach(f -> {
             try {
-                new File(String.format("%s/%s", replicationConfig.getReplica(), f.getPath())).delete();
+                // first delete the file, then its log
+                log.info("Deleting {}.", f.getPath());
+                boolean success = new File(f.getPath()).delete();
+                if (success) log.info("Successfully deleted file {}.", f.getPath());
+
+                success = new File(f.getLogFile().getPath()).delete();
+                if (success) log.info("Successfully deleted file {}.", f.getPath());
+
             } catch (SecurityException e) {
                 e.printStackTrace();
                 log.warn("Unable to delete file after transfer. File: {}", f.getFileName());
