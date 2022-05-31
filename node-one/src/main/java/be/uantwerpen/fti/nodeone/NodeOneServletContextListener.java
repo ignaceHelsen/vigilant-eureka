@@ -27,7 +27,6 @@ public class NodeOneServletContextListener
         log.info("Node is shutting down");
         replicationService.shutdown();
         networkService.nodeShutDown();
-        multicastListener.setHasShutdown(true);
     }
 
     @Override

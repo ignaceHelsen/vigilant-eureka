@@ -6,7 +6,6 @@ import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.config.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.config.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.domain.*;
-import com.google.gson.Gson;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -26,10 +25,12 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -55,7 +56,7 @@ public class ReplicationService {
     }
 
     @Scheduled(initialDelay = 30 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
-    public void startReplication() {
+    public void startSynchronization() {
         replicationComponent.lookForNewFiles();
 
         // check only for local files
@@ -82,6 +83,20 @@ public class ReplicationService {
                     log.error("Unable to connect to naming server");
                     e.printStackTrace();
                 }
+            }
+        });
+
+        replicationComponent.getDeletedFiles().forEach(file -> {
+            // send to replicas that they should delete this file now as well
+            String destination = getDestination(file);
+            if (destination != null) {
+                try {
+                    restTemplate.delete(String.format("http://%s:%s/api/replication/delete/%s", destination, namingServerConfig.getPort(), file));
+                } catch (Exception e) {
+                    log.error("Error occurred while trying to delete file {} from {}", file, destination);
+                    e.printStackTrace();
+                }
+                log.info("Succesfully deleted file {} from {}", file, destination);
             }
         });
     }
@@ -136,8 +151,9 @@ public class ReplicationService {
             ResponseEntity<Boolean> response = restTemplate.postForEntity(serverUrl, requestEntity, Boolean.class);
             if (Boolean.TRUE.equals(response.getBody())) log.info("Succesfully replicated file {}", path);
             else log.warn("Failed replicating file {}", path);
-        } catch (ResourceAccessException e) {
+        } catch (Exception e) {
             log.error("Could not connect to host ({})", destination);
+            throw e;
         }
     }
 
@@ -157,9 +173,8 @@ public class ReplicationService {
      */
     public boolean storeFile(MultipartFile file, MultipartFile logFile, Action action) throws IOException {
         String logPath = replicationComponent.createLogPath(file.getOriginalFilename());
-        String filePath;
+        String filePath = replicationComponent.createFilePath(file.getOriginalFilename());
         if (action == Action.LOCAL) {
-            filePath = replicationComponent.createFilePath(file.getOriginalFilename());
             log.info("Saving to {}", filePath);
             // Also replicate it
             FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
@@ -191,8 +206,9 @@ public class ReplicationService {
                 return false;
             }
         } else {
-            filePath = replicationComponent.createFilePath(file.getOriginalFilename());
             log.info("Replicating to {}", filePath);
+
+            fileService.saveFile(logFile, logPath);
 
             FileStructure fileStructure = new FileStructure(filePath, file.getOriginalFilename(), true,
                     replicationComponent.loadLog(file.getOriginalFilename()).orElse(new LogStructure(replicationComponent.createLogPath(file.getOriginalFilename()))));
@@ -353,5 +369,16 @@ public class ReplicationService {
         log.info("Deleting stored files");
         fileService.deletefiles(new ArrayList<>(replicationComponent.getLocalFiles()));
         fileService.deletefiles(new ArrayList<>(replicationComponent.getReplicatedFiles()));
+    }
+
+    public Boolean deleteReplica(String filePath) {
+        try {
+            fileService.deletefiles(List.of(new FileStructure(filePath, null, true, null)));
+        } catch (Exception e) {
+            log.error("Error while deleting file {}.", filePath);
+            return false;
+        }
+
+        return true;
     }
 }

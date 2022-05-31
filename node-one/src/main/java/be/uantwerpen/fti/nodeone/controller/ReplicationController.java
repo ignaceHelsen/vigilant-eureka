@@ -79,4 +79,10 @@ public class ReplicationController {
         // No action taken at the moment
         return ResponseEntity.ok(true);
     }
+
+    @DeleteMapping(path= "/delete/{filePath}")
+    public ResponseEntity<Boolean> delete(@PathVariable String filePath) {
+        return ResponseEntity.ok(replicationService.deleteReplica(filePath));
+    }
+
 }

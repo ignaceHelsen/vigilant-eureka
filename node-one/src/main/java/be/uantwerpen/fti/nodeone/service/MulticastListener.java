@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
@@ -38,7 +39,7 @@ public class MulticastListener {
 
     @Async
     public void listenForMulticast() {
-        while (true) {
+        while (!hasShutdown) {
             if (socket.isClosed()) {
                 log.warn("Previous socket closed exception is normal.");
                 break;
@@ -52,7 +53,6 @@ public class MulticastListener {
                 String nodeName = new String(buffer, StandardCharsets.UTF_8);
                 // ignore if same node
                 if (!nodeName.equals(networkConfig.getHostName())) {
-
                     int nodeHash = hashCalculator.calculateHash(nodeName);
 
                     int ownHash = hashCalculator.calculateHash(networkConfig.getHostName());
@@ -71,11 +71,11 @@ public class MulticastListener {
             }
         }
 
-        if (hasShutdown)
-            System.exit(0);
+        System.exit(0);
     }
 
-    public void setHasShutdown(boolean shutdown) {
-        this.hasShutdown = shutdown;
+    @PreDestroy
+    public void setHasShutdown() {
+        hasShutdown = true;
     }
 }

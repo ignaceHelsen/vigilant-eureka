@@ -1,5 +1,6 @@
 package be.uantwerpen.fti.nodeone.service;
 
+import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.config.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class FileService {
     private final ReplicationComponent replicationComponent;
+    private final ReplicationConfig replicationConfig;
 
     public List<String> getAllLocalFiles() {
         return replicationComponent.getLocalFiles().stream().map(FileStructure::getPath).collect(Collectors.toList());
@@ -86,7 +88,7 @@ public class FileService {
         // now delete the file
         files.forEach(f -> {
             try {
-                new File(f.getPath()).delete();
+                new File(String.format("%s/%s", replicationConfig.getReplica(), f.getPath())).delete();
             } catch (SecurityException e) {
                 e.printStackTrace();
                 log.warn("Unable to delete file after transfer. File: {}", f.getFileName());

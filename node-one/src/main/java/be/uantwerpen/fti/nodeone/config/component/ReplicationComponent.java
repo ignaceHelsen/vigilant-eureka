@@ -35,6 +35,7 @@ public class ReplicationComponent {
     private Set<FileStructure> localFiles;
     private Set<FileStructure> replicatedLocalFiles;
     private Set<FileStructure> replicatedFiles;
+    private Set<String> deletedFiles;
     private final ReplicationConfig replicationConfig;
     private final Gson gson;
     private final NodeStructure nodeStructure;
@@ -42,6 +43,8 @@ public class ReplicationComponent {
     public void initialize() {
         localFiles = new TreeSet<>();
         replicatedFiles = new TreeSet<>();
+        replicatedLocalFiles = new TreeSet<>();
+        deletedFiles = new TreeSet<>();
 
         lookForNewFiles();
     }
@@ -51,8 +54,15 @@ public class ReplicationComponent {
      * Files that have not been found in the config json are added and regarded as NOT yet replicated.
      */
     public void lookForNewFiles() {
-        // TODO load json
         log.info("Loading replication structure");
+        // reset the lists
+        deletedFiles = new TreeSet<>();
+        // we keep a copy of the previous state of all previous found files, if one has been found we delete it from the list, otherwise all files left can be regarded as being deleted since last search
+        deletedFiles = localFiles.stream().map(FileStructure::getFileName).collect(Collectors.toSet());
+
+        // now reset localfiles as well
+        localFiles = new TreeSet<>();
+
         File dir = new File(replicationConfig.getLocal());
         File[] directoryListing = dir.listFiles();
         if (directoryListing != null) {
@@ -60,13 +70,19 @@ public class ReplicationComponent {
             List<String> replicatedLocalPaths = localFiles.stream().map(FileStructure::getPath).collect(Collectors.toList());
             for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep")) && replicatedLocalPaths.stream().noneMatch(path -> path.equals(f.getPath()))).collect(Collectors.toList())) {
                 // add to files (it's a set so no duplicates)
-                // load josn containing list of all files that have been replicated
-                // if current child is foundin this list, set replicated to true. otherwise set to false
+                // load json containing list of all files that have been replicated
+                // if current child is found in this list, set replicated to true, otherwise set to false
                 FileStructure fileStructure = new FileStructure(child.getPath(), child.getName(), false, new LogStructure(createLogPath(child.getName())));
                 localFiles.add(fileStructure); // As new files are being found, these are of course not replicated yet so we set the boolean to false
                 fileStructure.getLogFile().registerOwner(nodeStructure.getCurrentHash());
                 saveLog(fileStructure.getLogFile(), child.getName());
             }
+
+            for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
+                deletedFiles.remove(child.getName());
+            }
+
+            log.info("test");
         }
     }
 
