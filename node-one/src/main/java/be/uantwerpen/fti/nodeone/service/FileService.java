@@ -95,6 +95,7 @@ public class FileService {
                 success = new File(f.getLogFile().getPath()).delete();
                 if (success) log.info("Successfully deleted file {}.", f.getPath());
 
+                replicationComponent.getReplicatedFiles().remove(f);
             } catch (SecurityException e) {
                 e.printStackTrace();
                 log.warn("Unable to delete file after transfer. File: {}", f.getFileName());
