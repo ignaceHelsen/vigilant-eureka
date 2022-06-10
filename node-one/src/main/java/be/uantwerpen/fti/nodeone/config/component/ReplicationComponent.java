@@ -81,8 +81,6 @@ public class ReplicationComponent {
             for (File child : Arrays.stream(directoryListing).filter(f -> !(f.getName().equalsIgnoreCase(".gitkeep"))).collect(Collectors.toList())) {
                 deletedFiles.remove(child.getName());
             }
-
-            log.info("test");
         }
     }
 
