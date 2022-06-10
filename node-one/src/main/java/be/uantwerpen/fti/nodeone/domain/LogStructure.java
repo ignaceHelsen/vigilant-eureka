@@ -23,8 +23,8 @@ public class LogStructure {
         this.downloads = new ArrayList<>();
     }
 
-    public void registerDownload(){
-        this.downloads.add(new Download(LocalDateTime.now()));
+    public void registerDownload(int hashValue){
+        this.downloads.add(new Download(hashValue, LocalDateTime.now()));
     }
 
     public void registerOwner(int hashValue) {
@@ -41,20 +41,13 @@ public class LogStructure {
     public static class Owner {
         private int hashValue;
         private LocalDateTime timeStamp;
-
-        public int getHashValue() {
-            return hashValue;
-        }
-
-        public LocalDateTime getTimeStamp() {
-            return timeStamp;
-        }
     }
 
     @Getter
     @Setter
     @AllArgsConstructor
     public static class Download {
+        private int hashValue;
         private LocalDateTime timeStamp;
     }
 }
