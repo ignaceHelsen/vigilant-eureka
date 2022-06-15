@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class LogStructure {
     private String path;
+    private Owner localFileOwner;
     private List<Owner> fileOwners;
     private List<Download> downloads;
 
@@ -33,6 +34,10 @@ public class LogStructure {
 
     public Owner getOwner(int index) {
         return fileOwners.get(index);
+    }
+
+    public void setNewLocalFileOwner(int hashValue) {
+        this.localFileOwner =  new Owner(hashValue, LocalDateTime.now());
     }
 
     @Getter

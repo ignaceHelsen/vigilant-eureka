@@ -14,11 +14,13 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.context.Theme;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
@@ -36,8 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
 @Service
 @Slf4j
@@ -185,11 +186,21 @@ public class ReplicationService {
 
         try {
             ResponseEntity<Boolean> response = restTemplate.postForEntity(serverUrl, requestEntity, Boolean.class);
-            if (Boolean.TRUE.equals(response.getBody())) log.info("Succesfully replicated file {}", path);
+            if (Boolean.TRUE.equals(response.getBody())) {
+                log.info("Succesfully replicated file {}", path);
+                try {
+                    Paths.get(logPath).toFile().delete();
+                } catch (SecurityException e) {
+                    e.printStackTrace();
+                    log.warn("Unable to delete file after transfer. File: {}", logPath);
+                    throw e;
+                }
+            }
             else log.warn("Failed replicating file {}", path);
         } catch (ResourceAccessException e) {
             log.error("Could not connect to host ({})", destination);
         }
+
     }
 
     private Resource getFile(String path) {
@@ -216,8 +227,9 @@ public class ReplicationService {
             log.info("Saving to {}", filePath);
             // Also replicate it
             FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
-            replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
             fileStruct.getLogFile().registerOwner(nodeStructure.getCurrentHash());
+            fileStruct.getLogFile().setNewLocalFileOwner(nodeStructure.getCurrentHash());
+            replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
             replicationComponent.addLocalFile(fileStruct);
 
             // Since the new file is stored locally, we can already replicate it
@@ -243,6 +255,13 @@ public class ReplicationService {
                 e.printStackTrace();
                 return false;
             }
+        } else if (action == Action.LOCALTRANSFER) {
+            filePath = replicationComponent.createFilePath(file.getOriginalFilename());
+            log.info("Saving to {}", filePath);
+            // Also replicate it
+            FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
+            replicationComponent.addLocalFile(fileStruct);
+            replicationComponent.addReplicatedLocalFile(fileStruct);
         } else {
             filePath = replicationComponent.createFilePath(file.getOriginalFilename());
             File outputFile = new File(logPath);
@@ -422,5 +441,49 @@ public class ReplicationService {
         log.info("Deleting stored files");
         deleteFiles(new ArrayList<>(replicationComponent.getLocalFiles()));
         deleteFiles(new ArrayList<>(replicationComponent.getReplicatedFiles()));
+    }
+
+    @Async
+    public void transferLocalFileShutdownNode(String fileName) {
+        FileStructure fileStructure = replicationComponent.getReplicatedFiles().stream().filter(file -> file.getFileName().equals(fileName)).findFirst().orElseThrow();
+        String destination = getDestination(fileStructure.getPath());
+        if (destination != null) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+
+            if (fileStructure.getPath() == null) {
+                log.warn("Path of file has returned null");
+                return;
+            }
+            body.add("file", getFile(fileStructure.getPath()));
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            String serverUrl = String.format("http://%s:%s/api/replication/transferLocalFile/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
+
+            try {
+                ResponseEntity<Integer> response = restTemplate.postForEntity(serverUrl, requestEntity, Integer.class);
+                fileStructure.getLogFile().setNewLocalFileOwner(response.getBody());
+
+                log.info("Transferred local file {}", fileStructure.getPath());
+
+            } catch (ResourceAccessException e) {
+                log.error("Could not connect to host ({})", destination);
+            }
+        }
+    }
+
+    public int saveTransferredLocalFile(MultipartFile file) {
+        Thread thread = new Thread(() -> {
+            try {
+                this.storeFile(file, file, Action.LOCALTRANSFER);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+        return nodeStructure.getCurrentHash();
     }
 }
