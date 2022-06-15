@@ -5,8 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class NextAndPreviousNode
-{
+public class NextAndPreviousNode {
     int idNext;
     String ipNext;
     int idPrevious;
