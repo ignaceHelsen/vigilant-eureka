@@ -4,7 +4,7 @@ package be.uantwerpen.fti.nodeone;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.domain.RegisterNodeRequest;
 import be.uantwerpen.fti.nodeone.domain.RemoveNodeRequest;
-import be.uantwerpen.fti.nodeone.service.HashCalculator;
+import be.uantwerpen.fti.nodeone.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.service.ReplicationService;
 import be.uantwerpen.fti.nodeone.service.RestService;
 import org.junit.jupiter.api.Test;

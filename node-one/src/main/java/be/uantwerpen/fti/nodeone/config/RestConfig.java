@@ -25,7 +25,7 @@ public class RestConfig {
     public RestTemplate restTemplate() {
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000);
-        factory.setReadTimeout(30000);
+        factory.setReadTimeout(3000000);
         return new RestTemplate(factory);
     }
 
@@ -40,10 +40,10 @@ public class RestConfig {
     public WebClient webClient() {
         reactor.netty.http.client.HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-                .responseTimeout(Duration.ofMillis(5000))
+                .responseTimeout(Duration.ofSeconds(5000))
                 .doOnConnected(conn ->
-                        conn.addHandlerLast(new ReadTimeoutHandler(15000, TimeUnit.MILLISECONDS))
-                                .addHandlerLast(new WriteTimeoutHandler(15000, TimeUnit.MILLISECONDS)));
+                        conn.addHandlerLast(new ReadTimeoutHandler(15000, TimeUnit.SECONDS))
+                                .addHandlerLast(new WriteTimeoutHandler(15000, TimeUnit.SECONDS)));
 
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
