@@ -79,6 +79,7 @@ public class ReplicationComponent {
                 FileStructure fileStructure = new FileStructure(child.getPath(), child.getName(), false, new LogStructure(createLogPath(child.getName())));
                 localFiles.add(fileStructure); // As new files are being found, these are of course not replicated yet so we set the boolean to false
                 fileStructure.getLogFile().registerOwner(nodeStructure.getCurrentHash());
+                fileStructure.getLogFile().setNewLocalFileOwner(nodeStructure.getCurrentHash());
                 saveLog(fileStructure.getLogFile(), child.getName());
             }
         }

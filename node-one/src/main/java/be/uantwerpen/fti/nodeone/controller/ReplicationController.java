@@ -73,7 +73,7 @@ public class ReplicationController {
         return ResponseEntity.badRequest().build();
     }
 
-    @PutMapping(path = "/warnDeletedFiles")
+    @PutMapping(path = "/warnDeletedFiles/{fileName}")
     public ResponseEntity<Boolean> warnDeletedFiles(@PathVariable String fileName) {
         replicationService.transferLocalFileShutdownNode(fileName);
         return ResponseEntity.ok(true);

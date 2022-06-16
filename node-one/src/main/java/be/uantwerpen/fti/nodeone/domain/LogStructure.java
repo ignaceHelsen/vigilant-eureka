@@ -37,7 +37,7 @@ public class LogStructure {
     }
 
     public void setNewLocalFileOwner(int hashValue) {
-        this.localFileOwner =  new Owner(hashValue, LocalDateTime.now());
+        this.localFileOwner = new Owner(hashValue, LocalDateTime.now());
     }
 
     @Getter

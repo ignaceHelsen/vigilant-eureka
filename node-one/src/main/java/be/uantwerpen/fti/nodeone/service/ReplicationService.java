@@ -1,26 +1,24 @@
 package be.uantwerpen.fti.nodeone.service;
 
+import be.uantwerpen.fti.nodeone.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
-import be.uantwerpen.fti.nodeone.domain.Action;
-import be.uantwerpen.fti.nodeone.domain.FileStructure;
-import be.uantwerpen.fti.nodeone.domain.LogStructure;
-import be.uantwerpen.fti.nodeone.domain.NodeStructure;
+import be.uantwerpen.fti.nodeone.domain.*;
 import com.google.gson.Gson;
-import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.context.Theme;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
@@ -38,7 +36,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
@@ -75,9 +74,11 @@ public class ReplicationService {
                         return;
                     }
                     try {
-                        replicate(file.getPath(), destination, file.getLogFile().getPath());
-                        file.setReplicated(true);
-                        replicationComponent.getReplicatedLocalFiles().add(file);
+                        boolean success = replicate(file.getPath(), destination, file.getLogFile().getPath());
+                        if (success) {
+                            file.setReplicated(true);
+                            replicationComponent.getReplicatedLocalFiles().add(file);
+                        }
                     } catch (IOException e) {
                         log.warn("Could not replicate file {}", file.getPath());
                         e.printStackTrace();
@@ -169,7 +170,7 @@ public class ReplicationService {
      * @param destination: The destination node to replicate it to.
      * @throws IOException: When error.
      */
-    private void replicate(String path, String destination, String logPath) throws IOException {
+    private boolean replicate(String path, String destination, String logPath) throws IOException {
         log.info("Replicating file {}", path);
 
         HttpHeaders headers = new HttpHeaders();
@@ -192,13 +193,16 @@ public class ReplicationService {
                     Paths.get(logPath).toFile().delete();
                 } catch (SecurityException e) {
                     e.printStackTrace();
-                    log.warn("Unable to delete file after transfer. File: {}", logPath);
-                    throw e;
+                    log.warn("Unable to delete log file after transfer. File: {}", logPath);
                 }
+                return true;
+            } else {
+                log.warn("Failed replicating file {}", path);
+                return false;
             }
-            else log.warn("Failed replicating file {}", path);
         } catch (ResourceAccessException e) {
             log.error("Could not connect to host ({})", destination);
+            return false;
         }
 
     }
@@ -237,11 +241,13 @@ public class ReplicationService {
                 String destination = getDestination(filePath);
                 if (destination != null) {
                     try {
-                    replicate(filePath, destination, logPath);
-                        fileStruct.setReplicated(true);
-                        replicationComponent.addReplicatedLocalFile(fileStruct);
+                        boolean success = replicate(filePath, destination, logPath);
+                        if (success) {
+                            fileStruct.setReplicated(true);
+                            replicationComponent.getReplicatedLocalFiles().add(fileStruct);
+                        }
                     } catch (IOException e) {
-                    log.error("Error occured while trying to replicate file {}", filePath);
+                        log.error("Error occured while trying to replicate file {}", filePath);
                         e.printStackTrace();
                         return false;
                     } catch (RestClientException e) {
@@ -257,8 +263,7 @@ public class ReplicationService {
             }
         } else if (action == Action.LOCALTRANSFER) {
             filePath = replicationComponent.createFilePath(file.getOriginalFilename());
-            log.info("Saving to {}", filePath);
-            // Also replicate it
+            log.info("Saving transferred local file to {}", filePath);
             FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
             replicationComponent.addLocalFile(fileStruct);
             replicationComponent.addReplicatedLocalFile(fileStruct);
@@ -286,16 +291,15 @@ public class ReplicationService {
     }
 
     /**
-     *
-     * @param files: The files to store locally
+     * @param files:  The files to store locally
      * @param action: To replicate or not to replicate
      * @return True if all files have been successfully stored or false if one ore more have failed.
      */
     public boolean storeFiles(List<MultipartFile> files, List<MultipartFile> logFiles, Action action) {
-        if (files.size()!= logFiles.size()) {
+        if (files.size() != logFiles.size()) {
             throw new IllegalArgumentException("Files and logFiles have a different size");
         }
-        for (int i=0; i < files.size(); i++) {
+        for (int i = 0; i < files.size(); i++) {
             try {
                 boolean success = storeFile(files.get(i), logFiles.get(i), action);
             } catch (IOException e) {
@@ -318,7 +322,8 @@ public class ReplicationService {
 
         replicationComponent.getReplicatedFiles().forEach(file -> {
             String destination = getDestination(file.getPath());
-            if (destination != null && destination.equalsIgnoreCase(nodeAddress)) {
+            if (destination != null && destination.equalsIgnoreCase(nodeAddress)
+                    && file.getLogFile().getLocalFileOwner().getHashValue() != hashCalculator.calculateHash(nodeAddress)) {
                 // add file to list
                 body.add("files", getFile(file.getPath()));
                 body.add("logFiles", getFile(file.getLogFile().getPath()));
@@ -421,10 +426,9 @@ public class ReplicationService {
         // Send all replicated files
         replicationComponent.getReplicatedFiles().forEach(file -> {
             try {
-                if (nodes.getIdPrevious() != file.getLogFile().getOwner(0).getHashValue()){
+                if (nodes.getIdPrevious() != file.getLogFile().getLocalFileOwner().getHashValue()) {
                     replicate(file.getPath(), nodes.getIpPrevious(), file.getLogFile().getPath());
-                }
-                else if (neighboursOfPreviousNode.getIdPrevious() != nodeStructure.getCurrentHash()){
+                } else if (neighboursOfPreviousNode.getIdPrevious() != nodeStructure.getCurrentHash()) {
                     replicate(file.getPath(), neighboursOfPreviousNode.getIpPrevious(), file.getLogFile().getPath());
                 }
             } catch (IOException e) {
@@ -443,35 +447,48 @@ public class ReplicationService {
         deleteFiles(new ArrayList<>(replicationComponent.getReplicatedFiles()));
     }
 
-    @Async
     public void transferLocalFileShutdownNode(String fileName) {
-        FileStructure fileStructure = replicationComponent.getReplicatedFiles().stream().filter(file -> file.getFileName().equals(fileName)).findFirst().orElseThrow();
-        String destination = getDestination(fileStructure.getPath());
-        if (destination != null) {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        Thread thread = new Thread(() -> {
 
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-
-            if (fileStructure.getPath() == null) {
-                log.warn("Path of file has returned null");
-                return;
+            FileStructure fileStructure = replicationComponent.getReplicatedFiles().stream().filter(file -> file.getFileName().equals(fileName)).findFirst().orElseThrow();
+            NextAndPreviousNode nodes = restService.getNextAndPrevious(networkService.getCurrentHash());
+            NextAndPreviousNode neighboursOfPreviousNode = restService.getNextAndPrevious(nodes.getIdNext());
+            String destination = null;
+            if (nodes.getIdPrevious() != fileStructure.getLogFile().getLocalFileOwner().getHashValue()) {
+                destination = nodes.getIpPrevious();
+            } else if (neighboursOfPreviousNode.getIdPrevious() != nodeStructure.getCurrentHash()) {
+                destination= neighboursOfPreviousNode.getIpPrevious();
             }
-            body.add("file", getFile(fileStructure.getPath()));
+            if (destination != null) {
+                log.info("Transferring local file({}) to {}", fileName, destination);
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-            String serverUrl = String.format("http://%s:%s/api/replication/transferLocalFile/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
+                MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
-            try {
-                ResponseEntity<Integer> response = restTemplate.postForEntity(serverUrl, requestEntity, Integer.class);
-                fileStructure.getLogFile().setNewLocalFileOwner(response.getBody());
+                if (fileStructure.getPath() == null) {
+                    log.warn("Path of file has returned null");
+                    return;
+                }
+                body.add("file", getFile(fileStructure.getPath()));
 
-                log.info("Transferred local file {}", fileStructure.getPath());
+                HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+                String serverUrl = String.format("http://%s:%s/api/replication/transferLocalFile/", destination, namingServerConfig.getPort()); // the namingserverconfig getPort is the same as our controller's port
 
-            } catch (ResourceAccessException e) {
-                log.error("Could not connect to host ({})", destination);
+                try {
+                    ResponseEntity<Integer> response = restTemplate.postForEntity(serverUrl, requestEntity, Integer.class);
+                    fileStructure.getLogFile().setNewLocalFileOwner(response.getBody());
+                    replicationComponent.saveLog(fileStructure.getLogFile(), fileStructure.getFileName());
+
+                    log.info("Transferred local file {}", fileStructure.getPath());
+
+                } catch (ResourceAccessException e) {
+                    log.error("Could not connect to host ({})", destination);
+                }
             }
-        }
+        });
+        thread.setDaemon(true);
+        thread.start();
     }
 
     public int saveTransferredLocalFile(MultipartFile file) {
