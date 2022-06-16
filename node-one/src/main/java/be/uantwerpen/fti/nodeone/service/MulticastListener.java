@@ -1,8 +1,11 @@
 package be.uantwerpen.fti.nodeone.service;
 
+import be.uantwerpen.fti.nodeone.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -12,8 +15,10 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class MulticastListener {
     private final HashCalculator hashCalculator;
+    private final RestService restService;
     private final NetworkConfig networkConfig;
     private final MulticastSocket socket;
     private NodeStructure nodeStructure;
@@ -36,12 +41,18 @@ public class MulticastListener {
                 int ownHash = hashCalculator.calculateHash(networkConfig.getHostName());
                 nodeStructure.setCurrentHash(ownHash);
 
-                if (nodeHash < ownHash) nodeStructure.setPreviousNode(nodeHash);
-                else if (nodeHash > ownHash) nodeStructure.setNextNode(nodeHash);
+                NextAndPreviousNode nextAndPreviousNode = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
+                nodeStructure.setNextNode(nextAndPreviousNode.getIdNext());
+                nodeStructure.setPreviousNode(nextAndPreviousNode.getIdPrevious());
+
+               /* if (nodeHash < ownHash && nodeStructure.getPreviousNode() < nodeHash) nodeStructure.setPreviousNode(nodeHash);
+                if (nodeHash > ownHash && nodeStructure.getNextNode() > nodeHash) nodeStructure.setNextNode(nodeHash);*/
 
             } catch (IOException e) {
                 e.printStackTrace();
+                log.warn("Socket could not be read");
             }
+
         }
     }
 }

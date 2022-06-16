@@ -1,7 +1,7 @@
 package be.uantwerpen.fti.nodeone.config;
 
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
-import be.uantwerpen.fti.nodeone.service.HashCalculator;
+import be.uantwerpen.fti.nodeone.component.HashCalculator;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -23,9 +23,10 @@ public class NetworkConfig {
     private int socketPort;
     private int updateNextSocketPort;
     private int updatePreviousSocketPort;
+    private int replicationSocketPort;
 
     @Bean
     public NodeStructure nodeStructure(HashCalculator hashCalculator) {
-        return new NodeStructure(0, hashCalculator.calculateHash(hostName), 0);
+        return new NodeStructure(hashCalculator.calculateHash(hostName), hashCalculator.calculateHash(hostName), hashCalculator.calculateHash(hostName));
     }
 }
