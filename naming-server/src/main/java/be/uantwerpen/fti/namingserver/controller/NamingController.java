@@ -29,7 +29,7 @@ import java.util.Map;
 //@ServerEndpoint(value = "/nodes")
 public class NamingController {
     private final HashService hashService;
-    private Session session;
+    //private Session session;
 
     /*@OnOpen
     public void onOpen(Session session) {
@@ -68,7 +68,7 @@ public class NamingController {
         log.info("The registration of node with hostname ({}) and ip address ({}) has been requested",
                 registerDto.getHostname(), registerDto.getIpAddress());
         boolean success = hashService.registerNode(registerDto.getIpAddress(), registerDto.getHostname());
-        broadcast();
+        //broadcast();
         return ResponseEntity.ok(success);
     }
 
@@ -76,7 +76,7 @@ public class NamingController {
     public ResponseEntity<Boolean> removeNode(@RequestBody RemoveNodeDto removeDto) {
         log.info("The removal of node with hostname ({}) has been requested", removeDto.getCurrentHash());
         hashService.removeNode(removeDto.getCurrentHash());
-        broadcast();
+        //broadcast();
         return ResponseEntity.ok(true);
     }
 

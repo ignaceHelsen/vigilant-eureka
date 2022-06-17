@@ -1,7 +1,7 @@
 package be.uantwerpen.fti.nodeone.service;
 
-import be.uantwerpen.fti.nodeone.config.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.config.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.domain.NextAndPreviousNode;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.AllArgsConstructor;
@@ -18,7 +18,6 @@ import java.net.Socket;
 @Slf4j
 @AllArgsConstructor
 public class TcpListener {
-    private final HashCalculator hashCalculator;
     private final RestService restService;
     private final NodeStructure nodeStructure;
     private final NetworkConfig networkConfig;

@@ -36,6 +36,8 @@ public class NetworkService {
      */
     @Async
     public void registerNode() {
+        // https://www.baeldung.com/java-broadcast-multicast
+        // multicast to group
         DatagramSocket socket;
         InetAddress group;
 
@@ -55,11 +57,10 @@ public class NetworkService {
     }
 
     /**
-     * Will periodically (60s) broadcast its presence to neighbouring nodes.
+     * Will periodically (30s) broadcast its presence to neighbouring nodes.
      */
     @Scheduled(fixedRate = 60 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
     public void BroadcastPresence() {
-        log.info(String.format("Broadcasting presence to other nodes, current previous node: %d\t Current next node: %d", nodeStructure.getPreviousNode(), nodeStructure.getNextNode()));
         // first go to naming server to get ip of previous and next node
         try {
             NextAndPreviousNode ipNodes = restService.getNextAndPrevious(nodeStructure.getCurrentHash());
@@ -106,6 +107,7 @@ public class NetworkService {
 
 
     public void nodeShutDown(int currentHash, int nextNode, int previousNode) {
+        log.info("Node request to shut down, next and previous node will be updated.");
         log.info("Updating next and previous nodes before shutdown");
         //Request ip with id next node namingservice (REST)
         String NextIp = restService.requestNodeIpWithHashValue(nextNode);

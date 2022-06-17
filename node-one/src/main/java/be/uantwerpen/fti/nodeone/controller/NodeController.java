@@ -1,17 +1,15 @@
 package be.uantwerpen.fti.nodeone.controller;
 
-import be.uantwerpen.fti.nodeone.config.component.ReplicationComponent;
+import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.controller.dto.NodeStructureDto;
+import be.uantwerpen.fti.nodeone.domain.FileStructure;
 import be.uantwerpen.fti.nodeone.service.FileService;
 import be.uantwerpen.fti.nodeone.service.NetworkService;
 import be.uantwerpen.fti.nodeone.service.ShutdownService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,32 +22,29 @@ import java.util.stream.Collectors;
 public class NodeController {
     private final ShutdownService shutdownService;
     private final FileService fileService;
-    private final NetworkService networkService;
-
     private final ReplicationComponent replicationComponent;
+    private final NetworkService networkService;
 
     @GetMapping("/local/all")
     public ResponseEntity<List<String>> getLocalFiles() {
-        log.info("Returning all local files.");
-        try {
-            return ResponseEntity.ok(fileService.getAllLocalFiles());
-        } catch (Exception e) {
-            return ResponseEntity.noContent().build();
-        }
+        return ResponseEntity.ok(fileService.getAllLocalFiles());
     }
 
     @GetMapping("/replicated/all")
     public ResponseEntity<List<String>> getReplicatedFiles() {
-        try {
-            return ResponseEntity.ok(fileService.getAllReplicatedFiles());
-        } catch (Exception e) {
-            return ResponseEntity.noContent().build();
-        }
+        return ResponseEntity.ok(fileService.getAllReplicatedFiles());
     }
 
     @GetMapping("/replicated/log")
     public ResponseEntity<List<String>> getLogFiles() {
         return ResponseEntity.ok(replicationComponent.getReplicatedFiles().stream().map(file -> file.getLogFile().getPath()).collect(Collectors.toList()));
+    }
+
+    @PostMapping("/shutdown")
+    public ResponseEntity<Boolean> shutdown() {
+        shutdownService.scheduleShutdown();
+
+        return ResponseEntity.ok(true);
     }
 
     @GetMapping("/config")

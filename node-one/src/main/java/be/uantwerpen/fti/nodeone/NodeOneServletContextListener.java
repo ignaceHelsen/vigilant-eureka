@@ -1,9 +1,11 @@
 package be.uantwerpen.fti.nodeone;
 
-import be.uantwerpen.fti.nodeone.service.*;
+import be.uantwerpen.fti.nodeone.service.MulticastListener;
+import be.uantwerpen.fti.nodeone.service.NetworkService;
+import be.uantwerpen.fti.nodeone.service.ReplicationService;
+import be.uantwerpen.fti.nodeone.service.TcpListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -20,7 +22,6 @@ public class NodeOneServletContextListener
     private final TcpListener tcpService;
     private final MulticastListener multicastListener;
     private final ReplicationService replicationService;
-    private final FileService fileService;
 
     @Override
     public void contextDestroyed(ServletContextEvent event) {
@@ -32,12 +33,7 @@ public class NodeOneServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent event) {
         tcpService.listenUnicastResponse();
-
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setWaitForTasksToCompleteOnShutdown(false);
-        executor.setAwaitTerminationSeconds(5);
-        executor.initialize();
-        executor.execute(multicastListener::listenForMulticast);
+        multicastListener.listenForMulticast();
 
         tcpService.listenForUpdateNext();
         tcpService.listenForUpdatePrevious();
@@ -45,7 +41,7 @@ public class NodeOneServletContextListener
         networkService.registerNode();
 
         replicationService.initializeReplication();
-        fileService.precheck(); // check if all needed directories for replication are present.
+        replicationService.precheck(); // check if all needed directories for replication are present.
 
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.schedule(this::scheduleLookForFiles, 30, TimeUnit.SECONDS);
@@ -53,5 +49,7 @@ public class NodeOneServletContextListener
 
     public void scheduleLookForFiles() {
         replicationService.lookForFilesAtNeighbouringNodes();
+
     }
 }
+

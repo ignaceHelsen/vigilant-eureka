@@ -16,10 +16,15 @@ public class ShutdownService {
 
     public void scheduleShutdown() {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
         executorService.schedule(this::initiateShutdown, 5, TimeUnit.SECONDS);
     }
 
-    public void initiateShutdown() {
+    /*
+     * Invoke with `0` to indicate no error or different code to indicate
+     * abnormal exit. es: shutdownManager.initiateShutdown(0);
+     **/
+    public void initiateShutdown(){
         SpringApplication.exit(appContext, () -> 0);
     }
 }

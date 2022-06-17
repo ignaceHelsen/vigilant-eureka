@@ -145,7 +145,6 @@ public class HashService {
         } finally {
             writeLock.unlock();
         }
-
     }
 
     public String getAddressWithKey(int key) {
@@ -218,6 +217,8 @@ public class HashService {
             try {
                 if (hash < nodes.firstKey() && nodes.lastKey() != sourceNode) {
                     return nodes.lastEntry().getValue();
+                } else if (hash < nodes.firstKey() && nodes.size() == 2) {
+                    return nodes.firstEntry().getValue();
                 }
             } catch (NoSuchElementException e) {
                 log.warn("No nodes found, it's possible that all nodes shut down during the last second.");
@@ -239,9 +240,6 @@ public class HashService {
             }
 
             return nodes.get(node);
-        } catch (NullPointerException e) {
-            log.error("Unable to find node destination for replication.");
-            return null;
         } finally {
             readLock.unlock();
         }

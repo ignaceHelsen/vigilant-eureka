@@ -1,5 +1,12 @@
 package be.uantwerpen.fti.nodeone.service;
 
+import be.uantwerpen.fti.nodeone.component.HashCalculator;
+import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
+import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
+import be.uantwerpen.fti.nodeone.config.NetworkConfig;
+import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
+import be.uantwerpen.fti.nodeone.domain.*;
+import com.google.gson.Gson;
 import be.uantwerpen.fti.nodeone.config.NamingServerConfig;
 import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
@@ -20,17 +27,20 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -45,10 +55,11 @@ public class ReplicationService {
     private final RestTemplate restTemplate;
     private final FileService fileService;
     private final HashCalculator hashCalculator;
+    private final ReplicationConfig replicationConfig;
     private final NodeStructure nodeStructure;
     private final RestService restService;
+    private final Gson gson;
     private final NetworkConfig networkConfig;
-    private final ReplicationConfig replicationConfig;
     private final NetworkService networkService;
     private final WebClient webClient;
 
@@ -70,9 +81,11 @@ public class ReplicationService {
                         return;
                     }
                     try {
-                        replicate(file.getPath(), destination, file.getLogFile().getPath());
-                        file.setReplicated(true);
-                        replicationComponent.getReplicatedLocalFiles().add(file);
+                        boolean success = replicate(file.getPath(), destination, file.getLogFile().getPath());
+                        if (success) {
+                            file.setReplicated(true);
+                            replicationComponent.getReplicatedLocalFiles().add(file);
+                        }
                     } catch (IOException e) {
                         log.warn("Could not replicate file {}", file.getPath());
                         e.printStackTrace();
@@ -127,13 +140,14 @@ public class ReplicationService {
     }
 
     /**
+     * Replication of a file.
      * Will replicate a file to a destination node.
      *
      * @param path:        The path to the file.
      * @param destination: The destination node to replicate it to.
      * @throws IOException: When error.
      */
-    private void replicate(String path, String destination, String logPath) throws IOException {
+    private boolean replicate(String path, String destination, String logPath) throws IOException {
         log.info("Replicating file {}", path);
 
         HttpHeaders headers = new HttpHeaders();
@@ -150,11 +164,22 @@ public class ReplicationService {
 
         try {
             ResponseEntity<Boolean> response = restTemplate.postForEntity(serverUrl, requestEntity, Boolean.class);
-            if (Boolean.TRUE.equals(response.getBody())) log.info("Succesfully replicated file {}", path);
-            else log.warn("Failed replicating file {}", path);
-        } catch (Exception e) {
+            if (Boolean.TRUE.equals(response.getBody())) {
+                log.info("Succesfully replicated file {}", path);
+                try {
+                    Paths.get(logPath).toFile().delete();
+                } catch (SecurityException e) {
+                    e.printStackTrace();
+                    log.warn("Unable to delete log file after transfer. File: {}", logPath);
+                }
+                return true;
+            } else {
+                log.warn("Failed replicating file {}", path);
+                return false;
+            }
+        } catch (ResourceAccessException e) {
             log.error("Could not connect to host ({})", destination);
-            throw e;
+            return false;
         }
     }
 
@@ -174,13 +199,14 @@ public class ReplicationService {
      */
     public boolean storeFile(MultipartFile file, MultipartFile logFile, Action action) throws IOException {
         String logPath = replicationComponent.createLogPath(file.getOriginalFilename());
-        String filePath = replicationComponent.createFilePath(file.getOriginalFilename());
         if (action == Action.LOCAL) {
+            filePath = replicationComponent.createFilePath(file.getOriginalFilename());
             log.info("Saving to {}", filePath);
             // Also replicate it
             FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
-            replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
             fileStruct.getLogFile().registerOwner(nodeStructure.getCurrentHash());
+            fileStruct.getLogFile().setNewLocalFileOwner(nodeStructure.getCurrentHash());
+            replicationComponent.saveLog(fileStruct.getLogFile(), file.getOriginalFilename());
             replicationComponent.addLocalFile(fileStruct);
 
             // Since the new file is stored locally, we can already replicate it
@@ -188,9 +214,12 @@ public class ReplicationService {
                 String destination = getDestination(filePath);
                 if (destination != null) {
                     try {
-                        replicate(filePath, destination, logPath);
-                        fileStruct.setReplicated(true);
-                        replicationComponent.addReplicatedLocalFile(fileStruct);
+                        boolean success = replicate(filePath, destination, logPath);
+                        if (success) {
+                            fileStruct.setReplicated(true);
+                            replicationComponent.getReplicatedLocalFiles().add(fileStruct);
+                            replicationComponent.addReplicatedLocalFile(fileStruct);
+                        }
                     } catch (IOException e) {
                         log.error("Error occurred while trying to replicate file {}", filePath);
                         e.printStackTrace();
@@ -206,16 +235,22 @@ public class ReplicationService {
                 e.printStackTrace();
                 return false;
             }
+        } else if (action == Action.LOCALTRANSFER) {
+            filePath = replicationComponent.createFilePath(file.getOriginalFilename());
+            log.info("Saving transferred local file to {}", filePath);
+            FileStructure fileStruct = new FileStructure(filePath, file.getOriginalFilename(), false, new LogStructure(logPath));
+            replicationComponent.addLocalFile(fileStruct);
+            replicationComponent.addReplicatedLocalFile(fileStruct);
         } else {
-            log.info("Replicating to {}", filePath);
-
+            filePath = replicationComponent.createFilePath(file.getOriginalFilename());
             fileService.saveFile(logFile, logPath);
-
             FileStructure fileStructure = new FileStructure(filePath, file.getOriginalFilename(), true,
                     replicationComponent.loadLog(file.getOriginalFilename()).orElse(new LogStructure(replicationComponent.createLogPath(file.getOriginalFilename()))));
             replicationComponent.addReplicatedFile(fileStructure);
             fileStructure.getLogFile().registerOwner(nodeStructure.getCurrentHash());
             replicationComponent.saveLog(fileStructure.getLogFile(), file.getOriginalFilename());
+
+            log.info("Replicating to {}", filePath);
         }
 
         try {
@@ -225,6 +260,7 @@ public class ReplicationService {
             log.error("Error while saving file");
         }
 
+        fileService.saveFile(logFile, logPath);
         return true;
     }
 
@@ -262,7 +298,8 @@ public class ReplicationService {
 
         replicationComponent.getReplicatedFiles().forEach(file -> {
             String destination = getDestination(file.getPath());
-            if (destination != null && destination.equalsIgnoreCase(nodeAddress)) {
+            if (destination != null && destination.equalsIgnoreCase(nodeAddress)
+                    && file.getLogFile().getLocalFileOwner().getHashValue() != hashCalculator.calculateHash(nodeAddress)) {
                 // add file to list
                 body.add("files", getFile(file.getPath()));
                 body.add("logFiles", getFile(file.getLogFile().getPath()));
@@ -349,7 +386,7 @@ public class ReplicationService {
         // Send all replicated files
         replicationComponent.getReplicatedFiles().forEach(file -> {
             try {
-                if (nodes.getIdPrevious() != file.getLogFile().getOwner(0).getHashValue()) {
+                if (nodes.getIdPrevious() != file.getLogFile().getLocalFileOwner().getHashValue()) {
                     replicate(file.getPath(), nodes.getIpPrevious(), file.getLogFile().getPath());
                 } else if (neighboursOfPreviousNode.getIdPrevious() != nodeStructure.getCurrentHash()) {
                     replicate(file.getPath(), neighboursOfPreviousNode.getIpPrevious(), file.getLogFile().getPath());

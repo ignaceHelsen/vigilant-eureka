@@ -1,6 +1,5 @@
 package be.uantwerpen.fti.nodeone.service;
 
-import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.config.component.ReplicationComponent;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
 import lombok.AllArgsConstructor;
