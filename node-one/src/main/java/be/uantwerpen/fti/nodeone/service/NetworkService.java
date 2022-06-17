@@ -60,7 +60,7 @@ public class NetworkService {
      * Will periodically (30s) broadcast its presence to neighbouring nodes.
      */
     @Scheduled(fixedRate = 60 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
-    public void BroadcastPresence() {
+    public void broadcastPresence() {
         // first go to naming server to get ip of previous and next node
         try {
             NextAndPreviousNode ipNodes = restService.getNextAndPrevious(nodeStructure.getCurrentHash());

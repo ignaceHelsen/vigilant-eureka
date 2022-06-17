@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 @CrossOrigin
 @RequestMapping("/api")
 public class NodeController {
-    private final ShutdownService shutdownService;
     private final FileService fileService;
     private final ReplicationComponent replicationComponent;
     private final NetworkService networkService;
@@ -38,13 +37,6 @@ public class NodeController {
     @GetMapping("/replicated/log")
     public ResponseEntity<List<String>> getLogFiles() {
         return ResponseEntity.ok(replicationComponent.getReplicatedFiles().stream().map(file -> file.getLogFile().getPath()).collect(Collectors.toList()));
-    }
-
-    @PostMapping("/shutdown")
-    public ResponseEntity<Boolean> shutdown() {
-        shutdownService.scheduleShutdown();
-
-        return ResponseEntity.ok(true);
     }
 
     @GetMapping("/config")

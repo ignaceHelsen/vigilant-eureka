@@ -90,10 +90,8 @@ public class HashService {
             updateMap();
             log.info("Node with hostname ({}) has been removed from the map", currentHash);
         } finally {
-            writeLock.lock();
+            writeLock.unlock();
         }
-
-
     }
 
     private void readMapFromFile() {

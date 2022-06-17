@@ -15,15 +15,23 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 public class MulticastListener {
     private final HashCalculator hashCalculator;
     private final RestService restService;
     private final NetworkConfig networkConfig;
     private final MulticastSocket socket;
-    private NodeStructure nodeStructure;
-    private boolean hasShutdown = false;
+    private final NodeStructure nodeStructure;
+    private boolean hasShutdown;
+
+    public MulticastListener(HashCalculator hashCalculator, RestService restService, NetworkConfig networkConfig, MulticastSocket socket, NodeStructure nodeStructure) {
+        this.hashCalculator = hashCalculator;
+        this.restService = restService;
+        this.networkConfig = networkConfig;
+        this.socket = socket;
+        this.nodeStructure = nodeStructure;
+        this.hasShutdown = false;
+    }
 
     @Async
     public void listenForMulticast() {

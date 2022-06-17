@@ -1,9 +1,12 @@
 package be.uantwerpen.fti.nodeone.service;
 
-import be.uantwerpen.fti.nodeone.config.component.ReplicationComponent;
+import be.uantwerpen.fti.nodeone.component.ReplicationComponent;
+import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,6 +25,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class FileService {
     private final ReplicationComponent replicationComponent;
+    private final ReplicationConfig replicationConfig;
 
     public List<String> getAllLocalFiles() {
         return replicationComponent.getLocalFiles().stream().map(FileStructure::getPath).collect(Collectors.toList());
@@ -44,41 +50,34 @@ public class FileService {
      * </ul>
      */
     public void precheck() {
-        File localDir = new File("src/resources/storage/local");
-        File replicaDir = new File("src/resources/storage/replica");
-        File logDir = new File("src/resources/storage/log");
+        File localDir = new File(replicationConfig.getLocal());
+        File replicaDir = new File(replicationConfig.getReplica());
+        File logDir = new File(replicationConfig.getLog());
 
-        if (!localDir.exists()) {
-            log.info("Created local directory.");
-            try {
-                boolean created = localDir.mkdirs();
+        try {
+            boolean created = localDir.mkdirs();
 
-                if (!created) log.warn("Failure while creating dir {}", localDir.getName());
-            } catch (SecurityException e) {
-                log.error("Unable to create storage/local directory. Security Exception");
-            }
+            if (!created) log.warn("Did not create dir {}", localDir.getName());
+        } catch (SecurityException e) {
+            log.error("Unable to create storage/local directory. Security Exception");
         }
 
-        if (!replicaDir.exists()) {
-            log.info("Created replica directory.");
-            try {
-                boolean created = replicaDir.mkdirs();
 
-                if (!created) log.warn("Failure while creating dir {}", replicaDir.getName());
-            } catch (SecurityException e) {
-                log.error("Unable to create storage/replica directory. Security Exception");
-            }
+        try {
+            boolean created = replicaDir.mkdirs();
+
+            if (!created) log.warn("Did not create dir {}", replicaDir.getName());
+        } catch (SecurityException e) {
+            log.error("Unable to create storage/replica directory. Security Exception");
         }
 
-        if (!logDir.exists()) {
-            log.info("Created log directory.");
-            try {
-                boolean created = logDir.mkdirs();
 
-                if (!created) log.warn("Failure while creating dir {}", logDir.getName());
-            } catch (SecurityException e) {
-                log.error("Unable to create storage/log directory. Security Exception");
-            }
+        try {
+            boolean created = logDir.mkdirs();
+
+            if (!created) log.warn("Did not create dir {}", logDir.getName());
+        } catch (SecurityException e) {
+            log.error("Unable to create storage/log directory. Security Exception");
         }
     }
 
@@ -111,5 +110,10 @@ public class FileService {
         try (FileOutputStream fos = new FileOutputStream(outputFile)) {
             fos.write(bytes);
         }
+    }
+
+    public Resource getFile(String path) {
+        Path file = Paths.get(path);
+        return new FileSystemResource(file.toFile());
     }
 }

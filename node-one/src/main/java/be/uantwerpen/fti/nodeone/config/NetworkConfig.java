@@ -1,6 +1,6 @@
 package be.uantwerpen.fti.nodeone.config;
 
-import be.uantwerpen.fti.nodeone.config.component.HashCalculator;
+import be.uantwerpen.fti.nodeone.component.HashCalculator;
 import be.uantwerpen.fti.nodeone.domain.NodeStructure;
 import lombok.Getter;
 import lombok.Setter;
