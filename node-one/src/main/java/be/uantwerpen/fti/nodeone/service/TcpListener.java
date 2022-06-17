@@ -17,7 +17,6 @@ import java.net.Socket;
 @Slf4j
 @AllArgsConstructor
 public class TcpListener {
-    private final HashCalculator hashCalculator;
     private final RestService restService;
     private final NodeStructure nodeStructure;
     private final NetworkConfig networkConfig;

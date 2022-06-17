@@ -4,16 +4,11 @@ import be.uantwerpen.fti.nodeone.domain.Action;
 import be.uantwerpen.fti.nodeone.service.ReplicationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -35,6 +30,11 @@ public class ReplicationController {
         return ResponseEntity.badRequest().build();
     }
 
+    @PostMapping(path = "transferLocalFile")
+    public ResponseEntity<Integer> transferLocalFile(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(replicationService.saveTransferredLocalFile(file));
+    }
+
     @PostMapping(path = "/replicate")
     public ResponseEntity<Boolean> replicateFile(@RequestParam("file") MultipartFile file, @RequestParam("logFile") MultipartFile logFile) {
         try {
@@ -53,6 +53,7 @@ public class ReplicationController {
      * @param destinationNode: The node that is asking for its replicas.
      * @return A True boolean indicating the transfer is in progress.
      */
+    // TODO: change to be a PUT endpoint
     @GetMapping(path = "/move/{destinationNode}")
     public ResponseEntity<Boolean> move(@PathVariable String destinationNode) {
         boolean success = replicationService.transferAndDeleteFiles(destinationNode);
@@ -73,9 +74,14 @@ public class ReplicationController {
         return ResponseEntity.badRequest().build();
     }
 
-    @PutMapping(path = "/warnDeletedFiles")
+    @PutMapping(path = "/warnDeletedFiles/{fileName}")
     public ResponseEntity<Boolean> warnDeletedFiles(@PathVariable String fileName) {
-        // No action taken at the moment
+        replicationService.transferLocalFileShutdownNode(fileName);
         return ResponseEntity.ok(true);
+    }
+
+    @DeleteMapping(path= "/delete/{filePath}")
+    public ResponseEntity<Boolean> delete(@PathVariable String filePath) {
+        return ResponseEntity.ok(replicationService.deleteReplica(filePath));
     }
 }

@@ -1,0 +1,10 @@
+@mixin hoverable($factor: 1) {
+    &:hover {
+        font-size: 1em * $factor;
+
+        img {
+            width: 2em * $factor;
+            height: auto;
+        }
+    }
+}
