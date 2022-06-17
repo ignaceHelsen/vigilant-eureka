@@ -172,8 +172,6 @@ public class ReplicationService {
         }
     }
 
-
-
     /**
      * Takes care of the storage of a file.
      * If it's a file destined for local storage, besides storing, we also replicate it immediately.
@@ -207,7 +205,7 @@ public class ReplicationService {
                             replicationComponent.addReplicatedLocalFile(fileStruct);
                         }
                     } catch (IOException e) {
-                        log.error("Error occurred while trying to replicate file {}", filePath);
+                        log.error("Error occured while trying to replicate file {}", filePath);
                         e.printStackTrace();
                         return false;
                     } catch (RestClientException e) {
