@@ -24,11 +24,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Service
 @Slf4j
 public class HashService {
+    private NavigableMap<Integer, String> nodes;
     private final MapConfig mapConfig;
     private final ReadWriteLock lock;
     private final Lock readLock;
     private final Lock writeLock;
-    private NavigableMap<Integer, String> nodes;
 
     public HashService(MapConfig mapConfig) {
         this.mapConfig = mapConfig;
@@ -90,10 +90,8 @@ public class HashService {
             updateMap();
             log.info("Node with hostname ({}) has been removed from the map", currentHash);
         } finally {
-            writeLock.lock();
+            writeLock.unlock();
         }
-
-
     }
 
     private void readMapFromFile() {
@@ -145,7 +143,6 @@ public class HashService {
         } finally {
             writeLock.unlock();
         }
-
     }
 
     public String getAddressWithKey(int key) {
@@ -165,7 +162,7 @@ public class HashService {
                 return nodes.firstKey(); // return the lowest node
             }
             return nodes.higherKey(currentHash);
-        } catch (NullPointerException e) {
+        } catch (NullPointerException | NoSuchElementException e) {
             return currentHash;
         } finally {
             readLock.unlock();
@@ -180,7 +177,7 @@ public class HashService {
                 return nodes.lastKey(); // return the highest node
             }
             return nodes.lowerKey(currentHash);
-        } catch (NullPointerException e) {
+        } catch (NullPointerException | NoSuchElementException e) {
             return currentHash;
         } finally {
             readLock.unlock();
