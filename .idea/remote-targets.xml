@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="root@dist-computing.idlab.uantwerpen.be:10051" type="ssh/sftp">
+        <config>
+          <option name="projectRootOnTarget" value="/root/node-one" />
+          <option name="serverName" value="root@dist-computing.idlab.uantwerpen.be:10051 password" />
+        </config>
+        <ContributedStateBase type="JavaLanguageRuntime">
+          <config>
+            <option name="homePath" value="/" />
+            <option name="javaVersionString" value="11.0.15" />
+          </config>
+        </ContributedStateBase>
+      </target>
+      <target name="root@dist-computing.idlab.uantwerpen.be:10052" type="ssh/sftp">
+        <config>
+          <option name="projectRootOnTarget" value="/root/node-one" />
+          <option name="serverName" value="root@dist-computing.idlab.uantwerpen.be:10052 password" />
+        </config>
+        <ContributedStateBase type="JavaLanguageRuntime">
+          <config>
+            <option name="homePath" value="/" />
+            <option name="javaVersionString" value="11.0.15" />
+          </config>
+        </ContributedStateBase>
+      </target>
+      <target name="root@dist-computing.idlab.uantwerpen.be:10053" type="ssh/sftp">
+        <config>
+          <option name="projectRootOnTarget" value="/root/node-one" />
+          <option name="serverName" value="root@dist-computing.idlab.uantwerpen.be:10053 password" />
+        </config>
+        <ContributedStateBase type="JavaLanguageRuntime">
+          <config>
+            <option name="homePath" value="/" />
+            <option name="javaVersionString" value="11.0.15" />
+          </config>
+        </ContributedStateBase>
+      </target>
+      <target name="root@dist-computing.idlab.uantwerpen.be:10054" type="ssh/sftp">
+        <config>
+          <option name="projectRootOnTarget" value="/root/node-one" />
+          <option name="serverName" value="root@dist-computing.idlab.uantwerpen.be:10054 password" />
+        </config>
+        <ContributedStateBase type="JavaLanguageRuntime">
+          <config>
+            <option name="homePath" value="/" />
+            <option name="javaVersionString" value="11.0.15" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>

@@ -1,0 +1,92 @@
+{
+  "groups": [
+    {
+      "name": "naming.server",
+      "type": "be.uantwerpen.fti.nodeone.config.NamingServerConfig",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NamingServerConfig"
+    },
+    {
+      "name": "network",
+      "type": "be.uantwerpen.fti.nodeone.config.NetworkConfig",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "replication",
+      "type": "be.uantwerpen.fti.nodeone.config.ReplicationConfig",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.ReplicationConfig"
+    }
+  ],
+  "properties": [
+    {
+      "name": "naming.server.address",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NamingServerConfig"
+    },
+    {
+      "name": "naming.server.port",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NamingServerConfig"
+    },
+    {
+      "name": "network.host-name",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "network.ip-address",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "network.multicast-group-ip",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "network.multicast-port",
+      "type": "java.lang.Integer",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "network.replication-socket-port",
+      "type": "java.lang.Integer",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "network.socket-port",
+      "type": "java.lang.Integer",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "network.update-next-socket-port",
+      "type": "java.lang.Integer",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "network.update-previous-socket-port",
+      "type": "java.lang.Integer",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.NetworkConfig"
+    },
+    {
+      "name": "replication.local",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.ReplicationConfig"
+    },
+    {
+      "name": "replication.log",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.ReplicationConfig"
+    },
+    {
+      "name": "replication.replica",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.ReplicationConfig"
+    },
+    {
+      "name": "replication.storage",
+      "type": "java.lang.String",
+      "sourceType": "be.uantwerpen.fti.nodeone.config.ReplicationConfig"
+    }
+  ],
+  "hints": []
+}

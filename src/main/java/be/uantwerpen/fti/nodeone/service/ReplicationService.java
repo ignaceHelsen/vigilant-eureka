@@ -54,16 +54,14 @@ public class ReplicationService {
 
     public void initializeReplication() {
         replicationComponent.initialize();
-        startSynchronization();
     }
 
-    @Scheduled(initialDelay = 10 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
+    @Scheduled(initialDelay = 30 * 1000, fixedRate = 10 * 1000) // check for new files that have been added manually
     public void startSynchronization() {
         replicationComponent.lookForNewFiles();
 
         // check only for local files
-        replicationComponent.getLocalFiles().stream().filter(file -> !replicationComponent.getReplicatedLocalFiles().contains(file))
-                .forEach(file -> {
+        replicationComponent.getLocalFiles().forEach(file -> {
             // replicate every file which has not yet been replicated
             if (!file.isReplicated()) {
                 try {

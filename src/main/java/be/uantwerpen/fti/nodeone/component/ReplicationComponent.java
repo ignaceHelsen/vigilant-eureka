@@ -1,6 +1,5 @@
 package be.uantwerpen.fti.nodeone.component;
 
-import be.uantwerpen.fti.nodeone.config.NetworkConfig;
 import be.uantwerpen.fti.nodeone.config.ReplicationConfig;
 import be.uantwerpen.fti.nodeone.domain.FileStructure;
 import be.uantwerpen.fti.nodeone.domain.LogStructure;
@@ -37,7 +36,6 @@ public class ReplicationComponent {
     private Set<FileStructure> replicatedFiles;
     private Set<String> deletedFiles;
     private final ReplicationConfig replicationConfig;
-    private final NetworkConfig networkConfig;
     private final Gson gson;
     private final NodeStructure nodeStructure;
 
@@ -80,7 +78,7 @@ public class ReplicationComponent {
         // now reset localfiles as well
         localFiles = new TreeSet<>();
 
-        File dir = new File(getReplicationConfig().getStorage() + "/" + getNetworkConfig().getHostName() + replicationConfig.getLocal());
+        File dir = new File(replicationConfig.getLocal());
         File[] directoryListing = dir.listFiles();
         if (directoryListing != null) {
             // ignore gitkeeps
@@ -103,13 +101,11 @@ public class ReplicationComponent {
     }
 
     public String createLogPath(String fileName) {
-        return String.format("%s/%s%s/%s.json", getReplicationConfig().getStorage(), getNetworkConfig().getHostName(),
-                getReplicationConfig().getLog(), fileName);
+        return String.format("%s/%s.json", getReplicationConfig().getLog(), fileName);
     }
 
     public String createFilePath(String fileName) {
-        return String.format("%s/%s%s/%s", getReplicationConfig().getStorage(), getNetworkConfig().getHostName(),
-                getReplicationConfig().getReplica(), fileName);
+        return String.format("%s/%s", replicationConfig.getReplica(), fileName);
     }
 
     public void addLocalFile(FileStructure fileStructure) {

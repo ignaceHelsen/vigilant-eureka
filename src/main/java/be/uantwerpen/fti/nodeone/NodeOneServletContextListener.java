@@ -35,7 +35,7 @@ public class NodeOneServletContextListener
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setWaitForTasksToCompleteOnShutdown(false);
-        executor.setAwaitTerminationSeconds(100000);
+        executor.setAwaitTerminationSeconds(5);
         executor.initialize();
         executor.execute(multicastListener::listenForMulticast);
 
@@ -48,7 +48,7 @@ public class NodeOneServletContextListener
         fileService.precheck(); // check if all needed directories for replication are present.
 
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-        executorService.schedule(this::scheduleLookForFiles, 5, TimeUnit.SECONDS);
+        executorService.schedule(this::scheduleLookForFiles, 30, TimeUnit.SECONDS);
     }
 
     public void scheduleLookForFiles() {

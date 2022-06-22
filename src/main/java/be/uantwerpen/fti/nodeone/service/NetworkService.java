@@ -34,6 +34,7 @@ public class NetworkService {
     /**
      * Will register itself by multicast to the group configured in application.properties/multicastPort
      */
+    @Async
     public void registerNode() {
         // https://www.baeldung.com/java-broadcast-multicast
         // multicast to group
@@ -58,7 +59,7 @@ public class NetworkService {
     /**
      * Will periodically (30s) broadcast its presence to neighbouring nodes.
      */
-    @Scheduled(fixedRate = 10 * 1000, initialDelay = 10 * 1000) // start after 30s after startup and send every 30s.
+    @Scheduled(fixedRate = 60 * 1000, initialDelay = 30 * 1000) // start after 30s after startup and send every 30s.
     public void broadcastPresence() {
         // first go to naming server to get ip of previous and next node
         try {

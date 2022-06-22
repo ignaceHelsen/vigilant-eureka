@@ -61,7 +61,8 @@ public class ReplicationService {
         replicationComponent.lookForNewFiles();
 
         // check only for local files
-        replicationComponent.getLocalFiles().forEach(file -> {
+        replicationComponent.getLocalFiles().stream().filter(file -> !replicationComponent.getReplicatedLocalFiles().contains(file))
+                .forEach(file -> {
             // replicate every file which has not yet been replicated
             if (!file.isReplicated()) {
                 try {
@@ -394,7 +395,6 @@ public class ReplicationService {
 
     public void transferLocalFileShutdownNode(String fileName) {
         Thread thread = new Thread(() -> {
-
             FileStructure fileStructure = replicationComponent.getReplicatedFiles().stream().filter(file -> file.getFileName().equals(fileName)).findFirst().orElseThrow();
             NextAndPreviousNode nodes = restService.getNextAndPrevious(networkService.getCurrentHash());
             NextAndPreviousNode neighboursOfPreviousNode = restService.getNextAndPrevious(nodes.getIdNext());
